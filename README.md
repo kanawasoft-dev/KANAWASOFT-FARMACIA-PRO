@@ -1,0 +1,2 @@
+# KANAWASOFT-FARMACIA-PRO
+Sistema de Gestão de Farmácia SaaS — KANAWA SOFT FARMÁCIA PRO.
