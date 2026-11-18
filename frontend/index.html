@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123b35">
-  <title>Kanawa Soft · Central SaaS</title>
+  <title>Kanawa Soft Farmácia PRO</title>
   <link rel="stylesheet" href="styles.css">\n  <link rel="stylesheet" href="saas.css">
 </head>
 <body>
@@ -81,24 +81,36 @@
       if (checkingAccess) return;
       checkingAccess = true;
       try {
-        // Acesso ao painel SaaS apenas para utilizadores promovidos na tabela protegida.
-        const { data: admin, error: accessError } = await sb
-          .from('platform_admins')
-          .select('user_id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        if (accessError) throw accessError;
+        const { data: admin, error: adminError } = await sb
+          .from('platform_admins').select('user_id').eq('user_id', session.user.id).maybeSingle();
+        if (adminError) throw adminError;
+        let appScript = './saas.js';
+        let accessLabel = 'Super Administrador';
         if (!admin) {
-          await sb.auth.signOut();
-          shell.hidden = true;
-          gate.hidden = false;
-          msg('A sua conta não tem permissão de Super Administrador SaaS.');
-          return;
+          const { data: memberships, error: memberError } = await sb
+            .from('pharmacy_members')
+            .select('pharmacy_id,role,status,pharmacies(id,name,status,currency_code,country_code)')
+            .eq('user_id', session.user.id).eq('status','active');
+          if (memberError) throw memberError;
+          const active = (memberships || []).filter(m => m.pharmacies && m.pharmacies.status === 'active');
+          if (!active.length) {
+            shell.hidden = true; gate.hidden = false;
+            msg('A conta foi autenticada, mas ainda não está associada a uma farmácia activa. Conclua a adesão ou peça ao administrador da farmácia para atribuir acesso.');
+            return;
+          }
+          if (active.length > 1) {
+            shell.hidden = true; gate.hidden = false;
+            msg('Esta conta pertence a mais de uma farmácia. Solicite ao administrador a selecção da unidade antes de continuar.');
+            return;
+          }
+          window.KANAWA_PHARMACY_CONTEXT = active[0];
+          appScript = './app.js';
+          accessLabel = active[0].role.replaceAll('_',' ');
         }
         gate.hidden=true; shell.hidden=false;
         const userButton=document.getElementById('userButton');
-        if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent='Super Administrador';}
-        if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src='./saas.js';document.body.append(script);}
+        if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent=accessLabel;}
+        if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src=appScript;script.onerror=()=>{msg('Falha ao carregar o painel. Actualize a página.');gate.hidden=false;shell.hidden=true;};document.body.append(script);}
       } catch (error) {
         shell.hidden=true; gate.hidden=false;
         msg('Não foi possível validar as permissões. Tente novamente.');
