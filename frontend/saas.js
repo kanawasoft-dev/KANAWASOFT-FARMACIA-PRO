@@ -127,8 +127,14 @@
     let rejection_reason=null;
     if(status==="rejected"){rejection_reason=prompt("Motivo da rejeição da candidatura:");if(!rejection_reason)return;}
     if(status==="approved"){
+      const application=state.applications.find(x=>x.pharmacy_id===pharmacyId);
       const docs=state.documents.filter(d=>d.pharmacy_id===pharmacyId);
-      if(!docs.length||docs.some(d=>d.status!=="approved")){toast("A candidatura exige documentos anexados e todos os ficheiros enviados aprovados.");return;}
+      const requiredDocs=["Certidão comercial","Cartão de contribuinte / NIF","Alvará ou licença","BI do representante","Documento do director técnico"];
+      const present=new Set(docs.map(d=>d.document_type));
+      const missing=requiredDocs.filter(type=>!present.has(type));
+      if(application?.status!=="submitted"){toast("A candidatura ainda não foi formalmente submetida pela farmácia.");return;}
+      if(missing.length){toast("Documentação mínima em falta: "+missing.join("; "));return;}
+      if(docs.some(d=>d.status!=="approved")){toast("Todos os documentos enviados devem estar aprovados antes de activar a farmácia.");return;}
     }
     const {data:{user}}=await sb.auth.getUser();
     const patch={status,reviewed_by:user.id,reviewed_at:new Date().toISOString(),rejection_reason};
