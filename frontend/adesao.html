@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b35">
+  <title>Registo de Farmácia · KANAWA SOFT</title>
+  <link rel="stylesheet" href="./adesao.css">
+</head>
+<body>
+  <header class="top"><a class="brand" href="./index.html">KANAWA SOFT <span>FARMÁCIA PRO</span></a><a href="./index.html">Central SaaS</a></header>
+  <main class="wrap">
+    <section class="intro"><p class="eyebrow">PLATAFORMA DE GESTÃO DE FARMÁCIAS</p><h1>Registe a sua farmácia</h1><p>Crie a conta da empresa, preencha os dados legais e submeta os documentos para análise da Central KANAWA SOFT.</p><div class="notice">A submissão não substitui o alvará, o licenciamento nem a validação pelas autoridades competentes em Angola.</div></section>
+    <section class="panel" id="authPanel">
+      <h2>1. Conta de acesso</h2><div class="tabs"><button type="button" class="tab active" data-mode="signup">Criar conta</button><button type="button" class="tab" data-mode="login">Já tenho conta</button></div>
+      <form id="authForm">
+        <label id="nameWrap">Nome completo<input id="fullName" autocomplete="name" required></label>
+        <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+        <label>Palavra-passe<input id="password" type="password" minlength="8" autocomplete="new-password" required></label>
+        <button class="primary" id="authSubmit">Criar conta</button>
+      </form><p class="message" id="authMessage" role="status"></p>
+    </section>
+    <section class="panel hidden" id="companyPanel">
+      <div class="panel-head"><div><h2>2. Dados da empresa e farmácia</h2><p>Preencha os dados exactamente como constam nos documentos oficiais.</p></div><button id="logout" class="secondary" type="button">Terminar sessão</button></div>
+      <form id="companyForm">
+        <h3>Identificação empresarial</h3>
+        <div class="grid">
+          <label>Razão social<input name="legal_name" required></label>
+          <label>Nome comercial da farmácia<input name="trade_name" required></label>
+          <label>NIF<input name="nif" required></label>
+          <label>Forma jurídica<select name="legal_form"><option value="">Seleccionar</option><option>Empresário em nome individual</option><option>Sociedade por quotas</option><option>Sociedade anónima</option><option>Outra</option></select></label>
+          <label>Província<select name="province" required><option value="">Seleccionar</option><option>Luanda</option><option>Bengo</option><option>Benguela</option><option>Bié</option><option>Cabinda</option><option>Cuando</option><option>Cuanza Norte</option><option>Cuanza Sul</option><option>Cubango</option><option>Cunene</option><option>Huambo</option><option>Huíla</option><option>Icolo e Bengo</option><option>Lunda Norte</option><option>Lunda Sul</option><option>Malanje</option><option>Moxico</option><option>Moxico Leste</option><option>Namibe</option><option>Uíge</option><option>Zaire</option></select></label>
+          <label>Município<input name="municipality" required></label>
+          <label class="wide">Endereço completo<input name="address" required></label>
+          <label>Telefone<input name="phone" type="tel" required placeholder="+244"></label>
+          <label>E-mail de contacto<input name="contact_email" type="email" required></label>
+        </div>
+        <h3>Representante legal</h3><div class="grid">
+          <label>Nome do representante<input name="representative_name" required></label>
+          <label>N.º do Bilhete de Identidade<input name="representative_bi"></label>
+        </div>
+        <h3>Licenciamento e responsável técnico</h3><div class="grid">
+          <label>N.º do alvará/licença da farmácia<input name="pharmacy_license_number"></label>
+          <label>Director técnico / farmacêutico responsável<input name="technical_director_name"></label>
+          <label>Registo ou licença profissional<input name="technical_director_license"></label>
+        </div>
+        <h3>Documentos da empresa</h3>
+        <p class="hint">Pode anexar PDF, JPG ou PNG até 15 MB por ficheiro. Os documentos ficam num armazenamento privado, não público.</p>
+        <div class="grid">
+          <label>Tipo de documento<select id="documentType"><option value="Certidão comercial">Certidão comercial</option><option value="Cartão de contribuinte / NIF">Cartão de contribuinte / NIF</option><option value="Alvará ou licença">Alvará ou licença</option><option value="BI do representante">BI do representante</option><option value="Documento do director técnico">Documento do director técnico</option><option value="Outro documento">Outro documento</option></select></label>
+          <label>Ficheiros<input id="documents" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"></label>
+        </div>
+        <button class="primary" id="saveCompany">Guardar candidatura e enviar documentos</button>
+      </form>
+      <p class="message" id="companyMessage" role="status"></p>
+    </section>
+    <footer>© <span id="year"></span> KANAWA SOFT · FARMÁCIA PRO · Angola</footer>
+  </main>
+  <script type="module" src="./adesao.js"></script>
+</body>
+</html>
