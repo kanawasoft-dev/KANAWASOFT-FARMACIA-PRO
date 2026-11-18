@@ -1,0 +1,10 @@
+/* Central SaaS Admin — Kanawa Soft */
+.saas-kpi{font-variant-numeric:tabular-nums}
+#content .report-grid{margin-top:18px}
+#content .report-box{min-height:150px}
+#content .panel{min-width:0}
+#content .activity-row{gap:12px}
+#content .activity-row>div{min-width:0}
+#content .activity-row b{overflow-wrap:anywhere}
+#content code{background:#eef4f1;padding:2px 5px;border-radius:4px}
+@media(max-width:700px){#content .toolbar{align-items:stretch;flex-direction:column}#content .toolbar .search{width:100%}}
