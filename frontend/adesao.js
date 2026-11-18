@@ -12,9 +12,10 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setM
 async function showSession(session){if(!session){authPanel.classList.remove('hidden');companyPanel.classList.add('hidden');return;}authPanel.classList.add('hidden');companyPanel.classList.remove('hidden');}
 $('#authForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#authSubmit');btn.disabled=true;message('#authMessage','A processar…');try{const email=$('#email').value.trim(),password=$('#password').value;if(mode==='signup'){const full_name=$('#fullName').value.trim();const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name},emailRedirectTo:location.href}});if(error)throw error;if(!data.session){message('#authMessage','Conta criada. Confirme o e-mail recebido e depois volte aqui para iniciar sessão.',true);setMode('login');return;}await showSession(data.session);}else{const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;await showSession(data.session);}}catch(err){message('#authMessage',err.message||'Não foi possível autenticar.');}finally{btn.disabled=false;}});
 $('#logout').addEventListener('click',async()=>{await sb.auth.signOut();await showSession(null);});
-$('#companyForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#saveCompany');btn.disabled=true;message('#companyMessage','A guardar os dados da farmácia…');try{
+$('#companyForm').addEventListener('submit',async e=>{e.preventDefault();const formElement=e.currentTarget;if(!(formElement instanceof HTMLFormElement)){message('#companyMessage','Não foi possível identificar o formulário. Actualize a página e tente novamente.');return;}const btn=$('#saveCompany');btn.disabled=true;message('#companyMessage','A guardar os dados da farmácia…');try{
+ // Capturar o formulário antes do primeiro await: currentTarget deixa de estar disponível após o evento terminar.
+ const form=new FormData(formElement);const v=Object.fromEntries(form.entries());
  const {data:{user},error:userError}=await sb.auth.getUser();if(userError||!user)throw userError||new Error('Inicie sessão novamente.');
- const form=new FormData(e.currentTarget);const v=Object.fromEntries(form.entries());
  let pharmacyId;
  const {data:existingMembership,error:membershipLookupError}=await sb.from('pharmacy_members').select('pharmacy_id,role').eq('user_id',user.id).eq('role','pharmacy_owner').limit(1);
  if(membershipLookupError)throw membershipLookupError;
