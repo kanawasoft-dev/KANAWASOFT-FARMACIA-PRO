@@ -17,7 +17,7 @@
       <div class="side-caption">MENU PRINCIPAL</div>
       <nav id="navigation" aria-label="Navegação principal"></nav>
       <div class="sidebar-footer">
-        <span class="status-dot"></span> Sistema local
+        <span class="status-dot"></span> Sistema
         <small>Kanawa Soft · Farmácia</small>
       </div>
     </aside>
@@ -28,7 +28,7 @@
         <div class="breadcrumb"><span>Kanawa Soft</span><b>/</b><strong id="pageTitle">Painel</strong></div>
         <div class="top-actions">
           <span class="today" id="today"></span>
-          <button class="user-chip" id="userButton"><span class="avatar">KS</span><span><b>Administrador</b><small>Perfil principal</small></span></button>
+          <button class="user-chip" id="userButton"><span class="avatar">KS</span><span><b>Conta</b><small>Sessão</small></span></button>
         </div>
       </header>
       <section class="content" id="content" aria-live="polite"></section>
@@ -43,6 +43,12 @@
       <div class="dialog-actions"><button type="button" class="btn btn-light" id="cancelDialog">Cancelar</button><button class="btn btn-primary" type="submit">Guardar registo</button></div>
     </form>
   </dialog>
-  <script src="app.js"></script>
+  <script type="module">
+    import './supabase.js';
+    const app = document.createElement('script');
+    app.src = './app.js';
+    app.defer = false;
+    document.body.appendChild(app);
+  </script>
 </body>
 </html>
