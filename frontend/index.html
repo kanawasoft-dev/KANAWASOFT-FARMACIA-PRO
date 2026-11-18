@@ -138,7 +138,17 @@
       const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://farmacia.kanawasoft.shop/'});
       msg(error?error.message:'Se a conta existir, receberá um e-mail com instruções de recuperação.',!error);
     });
-    sb.auth.onAuthStateChange((_event,session)=>{reveal(session);});
+    // Não executar consultas ao banco dentro do callback de onAuthStateChange:
+    // o cliente Auth mantém um lock durante o evento e isso pode bloquear o login.
+    // O formulário trata SIGNED_IN explicitamente; aqui tratamos apenas o logout.
+    sb.auth.onAuthStateChange((event)=>{
+      if(event === 'SIGNED_OUT'){
+        shell.hidden = true;
+        gate.hidden = false;
+        appLoaded = false;
+        window.KANAWA_PHARMACY_CONTEXT = null;
+      }
+    });
     const {data,error}=await sb.auth.getSession();
     if(error){msg(error.message);gate.hidden=false;}else await reveal(data.session);
   </script>
