@@ -84,7 +84,7 @@
     ${docs.map(d=>`<div class="activity-row"><div><b>${esc(d.document_type)} — ${esc(d.document_name)}</b><small>${esc(d.mime_type)} · ${fmt(Math.ceil(d.size_bytes/1024))} KB · Enviado em ${date(d.created_at)} · Validade: ${date(d.expires_on)}</small><small>Estado: ${esc(d.status)} ${d.reviewer_note?`· Nota: ${esc(d.reviewer_note)}`:""}</small></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="mini-btn" data-view-document="${d.id}">Abrir</button><button class="mini-btn" data-review-document="${d.id}" data-document-status="approved">Aprovar</button><button class="mini-btn" data-review-document="${d.id}" data-document-status="rejected">Rejeitar</button></div></div>`).join("")||'<div class="empty">Nenhum documento carregado.</div>'}
     </section>
     <section class="panel" style="margin-top:18px"><div class="panel-head"><h3>Decisão da Central SaaS</h3>${statusPill(a.status)}</div>
-    <p class="panel-sub">Para aprovar, todos os documentos já enviados devem estar aprovados e deve existir pelo menos um documento anexado. A lista legal obrigatória ainda deve ser conferida pela equipa responsável.</p>
+    <p class="panel-sub">Para aprovar, a candidatura deve estar submetida, os cinco documentos obrigatórios devem estar aprovados e não pode existir qualquer documento pendente ou rejeitado. A decisão é validada e gravada numa única transacção no banco de dados.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn btn-light" data-set-application="${pharmacyId}" data-application-status="in_review">Marcar em análise</button>
       <button class="btn btn-primary" data-set-application="${pharmacyId}" data-application-status="approved">Aprovar candidatura</button>
@@ -125,29 +125,23 @@
   }
   async function setApplicationStatus(pharmacyId,status){
     let rejection_reason=null;
-    if(status==="rejected"){rejection_reason=prompt("Motivo da rejeição da candidatura:");if(!rejection_reason)return;}
-    if(status==="approved"){
-      const application=state.applications.find(x=>x.pharmacy_id===pharmacyId);
-      const docs=state.documents.filter(d=>d.pharmacy_id===pharmacyId);
-      const requiredDocs=["Certidão comercial","Cartão de contribuinte / NIF","Alvará ou licença","BI do representante","Documento do director técnico"];
-      const present=new Set(docs.map(d=>d.document_type));
-      const missing=requiredDocs.filter(type=>!present.has(type));
-      if(application?.status!=="submitted"){toast("A candidatura ainda não foi formalmente submetida pela farmácia.");return;}
-      if(missing.length){toast("Documentação mínima em falta: "+missing.join("; "));return;}
-      if(docs.some(d=>d.status!=="approved")){toast("Todos os documentos enviados devem estar aprovados antes de activar a farmácia.");return;}
-    }
-    const {data:{user}}=await sb.auth.getUser();
-    const patch={status,reviewed_by:user.id,reviewed_at:new Date().toISOString(),rejection_reason};
-    const {error}=await sb.from("pharmacy_applications").update(patch).eq("pharmacy_id",pharmacyId);
-    if(error)throw error;
-    if(status==="approved"){
-      const {error:pharmacyError}=await sb.from("pharmacies").update({status:"active"}).eq("id",pharmacyId);
-      if(pharmacyError)throw pharmacyError;
-    }
     if(status==="rejected"){
-      await sb.from("pharmacies").update({status:"pending"}).eq("id",pharmacyId);
+      rejection_reason=prompt("Motivo da rejeição da candidatura:");
+      if(!rejection_reason||!rejection_reason.trim())return;
     }
-    toast("Estado da candidatura actualizado.");await refresh();state.page="application-detail";state.selectedPharmacyId=pharmacyId;render();
+    const labels={approved:"aprovação",rejected:"rejeição",in_review:"marcação em análise"};
+    const {data,error}=await sb.rpc("review_pharmacy_application",{
+      p_pharmacy_id:pharmacyId,
+      p_decision:status,
+      p_reason:rejection_reason
+    });
+    if(error)throw error;
+    if(!data?.success)throw new Error("A Central não confirmou a decisão.");
+    toast("Candidatura actualizada: "+(labels[status]||status)+".");
+    await refresh();
+    state.page="application-detail";
+    state.selectedPharmacyId=pharmacyId;
+    render();
   }
   root.addEventListener("click",async e=>{
     const go=e.target.closest("[data-go]");if(go){state.page=go.dataset.go;render();return;}
