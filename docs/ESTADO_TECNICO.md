@@ -9,14 +9,14 @@
 - Foi criado workflow de deploy Cloudflare Pages pelo GitHub Actions.
 
 ## Limitações que continuam abertas
-- O workflow de deploy só inicia depois de configurar o segredo GitHub CLOUDFLARE_API_TOKEN com um token Cloudflare que tenha permissão Pages Write.
+- O workflow de deploy só publica depois de configurar o segredo GitHub CLOUDFLARE_API_TOKEN com um token Cloudflare que tenha permissão Pages Write; as execuções sem o segredo terminam sem publicar.
 - O deploy inicial ainda precisa de ser confirmado; o projecto Pages não tinha deployment na auditoria.
 - O POS ainda não grava cabeçalho + linhas + baixa de stock numa única transacção. O módulo de vendas está em consulta para evitar vendas incompletas.
 - Compras ainda não gravam cabeçalho + itens + entrada de stock numa transacção; o módulo está em consulta.
 - Convites e criação de utilizadores Auth precisam de uma Edge Function/fluxo administrativo seguro; o módulo actual consulta membros existentes.
 - Fecho de caixa, movimentos de caixa e reconciliação precisam de completar o fluxo.
 - A protecção Supabase contra palavras-passe comprometidas continua desactivada; activar em Auth > Settings > Password Security.
-- Ainda é necessário testar adesão completa, upload e revisão de documentos, login de proprietário, login de operador e permissões por papel.
+- A adesão exige cinco grupos documentais mínimos (certidão comercial, NIF, alvará/licença, BI do representante e documento do director técnico); a lista pode exigir anexos adicionais conforme a autoridade competente. A farmácia nasce pendente e só fica activa após revisão SaaS.
 
 ## Segurança
 - Não colocar service_role ou sb_secret no navegador nem no GitHub.
