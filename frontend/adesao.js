@@ -20,15 +20,15 @@ $('#companyForm').addEventListener('submit',async e=>{e.preventDefault();const b
  if(membershipLookupError)throw membershipLookupError;
  if(existingMembership&&existingMembership.length){pharmacyId=existingMembership[0].pharmacy_id;}
  else{
-  const {data:pharmacy,error:pharmacyError}=await sb.from('pharmacies').insert({name:v.trade_name,nif:v.nif,country_code:'AO',currency_code:'AOA',timezone:'Africa/Luanda',created_by:user.id}).select('id').single();
+  const {data:pharmacy,error:pharmacyError}=await sb.from('pharmacies').insert({name:v.trade_name,nif:v.nif,country_code:'AO',currency_code:'AOA',timezone:'Africa/Luanda',status:'pending',created_by:user.id}).select('id').single();
   if(pharmacyError)throw pharmacyError;pharmacyId=pharmacy.id;
   const {error:memberError}=await sb.from('pharmacy_members').insert({pharmacy_id:pharmacyId,user_id:user.id,role:'pharmacy_owner',status:'active'});
   if(memberError)throw memberError;
  }
  const {data:existingApp,error:appLookupError}=await sb.from('pharmacy_applications').select('pharmacy_id').eq('pharmacy_id',pharmacyId).maybeSingle();
  if(appLookupError)throw appLookupError;
- const application={pharmacy_id:pharmacyId,legal_name:v.legal_name,trade_name:v.trade_name,nif:v.nif,legal_form:v.legal_form||null,province:v.province,municipality:v.municipality,address:v.address,phone:v.phone,contact_email:v.contact_email,representative_name:v.representative_name,representative_bi:v.representative_bi||null,pharmacy_license_number:v.pharmacy_license_number||null,technical_director_name:v.technical_director_name||null,technical_director_license:v.technical_director_license||null,status:'draft'};
- const result=existingApp?await sb.from('pharmacy_applications').update(application).eq('pharmacy_id',pharmacyId):await sb.from('pharmacy_applications').insert(application);
+ const application={pharmacy_id:pharmacyId,legal_name:v.legal_name,trade_name:v.trade_name,nif:v.nif,legal_form:v.legal_form||null,province:v.province,municipality:v.municipality,address:v.address,phone:v.phone,contact_email:v.contact_email,representative_name:v.representative_name,representative_bi:v.representative_bi||null,pharmacy_license_number:v.pharmacy_license_number||null,technical_director_name:v.technical_director_name||null,technical_director_license:v.technical_director_license||null};
+ const result=existingApp?await sb.from('pharmacy_applications').update(application).eq('pharmacy_id',pharmacyId):await sb.from('pharmacy_applications').insert({...application,status:'draft'});
  if(result.error)throw result.error;
  const files=Array.from($('#documents').files||[]);
  for(const file of files){
@@ -41,8 +41,19 @@ $('#companyForm').addEventListener('submit',async e=>{e.preventDefault();const b
   const {error:docError}=await sb.from('pharmacy_documents').insert({pharmacy_id:pharmacyId,document_type:$('#documentType').value,document_name:file.name,storage_path:path,mime_type:file.type,size_bytes:file.size,status:'pending',uploaded_by:user.id});
   if(docError)throw docError;
  }
- message('#companyMessage','Candidatura guardada. ID da farmácia: '+pharmacyId+'. Estado: rascunho. A equipa KANAWA SOFT poderá analisar os dados e documentos.',true);
- $('#companyForm').reset();
+ const requiredDocs=['Certidão comercial','Cartão de contribuinte / NIF','Alvará ou licença','BI do representante','Documento do director técnico'];
+ const {data:uploadedDocs,error:docsLookupError}=await sb.from('pharmacy_documents').select('document_type').eq('pharmacy_id',pharmacyId);
+ if(docsLookupError)throw docsLookupError;
+ const present=new Set((uploadedDocs||[]).map(d=>d.document_type));
+ const missing=requiredDocs.filter(type=>!present.has(type));
+ if(missing.length===0){
+  const {error:submitError}=await sb.from('pharmacy_applications').update({status:'submitted',submitted_at:new Date().toISOString()}).eq('pharmacy_id',pharmacyId);
+  if(submitError)throw submitError;
+  message('#companyMessage','Candidatura submetida para análise. Os cinco grupos documentais mínimos foram recebidos. A farmácia permanece pendente até aprovação da Central KANAWA SOFT. ID: '+pharmacyId,true);
+ }else{
+  message('#companyMessage','Dados guardados. Para submeter, envie ainda: '+missing.join('; ')+'. Pode seleccionar um tipo de documento por vez e guardar novamente.',true);
+ }
+ $('#documents').value='';
  }catch(err){message('#companyMessage',err.message||'Erro ao guardar a candidatura. Verifique os campos e tente novamente.');}finally{btn.disabled=false;}
 });
 sb.auth.onAuthStateChange((_event,session)=>{showSession(session);});
