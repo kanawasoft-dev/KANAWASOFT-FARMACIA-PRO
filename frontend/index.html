@@ -52,105 +52,212 @@
   </style>
   <script type="module">
     import './supabase.js';
+
     const sb = window.KANAWA_SUPABASE;
-    let appLoaded = false;
     const shell = document.querySelector('.app-shell');
-    const footer = document.querySelector('.toast-region');
+    let appLoaded = false;
+    let authInProgress = false;
+
     shell.hidden = true;
     const gate = document.createElement('main');
     gate.className = 'auth-gate';
     gate.innerHTML = `
       <section class="auth-card">
         <div class="auth-brand">KANAWA SOFT · FARMÁCIA PRO</div>
-        <h1 id="authTitle">Central de Administração SaaS</h1>
-        <p id="authDescription">Entre com a conta de Super Administrador para gerir a plataforma.</p>
+        <h1 id="authTitle">Acesso à plataforma</h1>
+        <p id="authDescription">Entre com a sua conta para carregar os módulos e os dados autorizados da farmácia.</p>
         <form id="authForm">
           <label class="auth-field"><span>E-mail</span><input id="authEmail" type="email" autocomplete="username" required placeholder="nome@empresa.com"></label>
-          <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="A sua palavra-passe"></label>
+          <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required placeholder="A sua palavra-passe"></label>
           <button class="auth-submit" id="authSubmit" type="submit">Entrar</button>
         </form>
         <button class="auth-link" id="forgotPassword" type="button">Esqueci a palavra-passe</button>
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
-        <div class="auth-note">Acesso exclusivo a administradores autorizados da plataforma KANAWA SOFT.</div>\n        <p style="margin-top:12px;text-align:center"><a class="auth-link" href="./adesao.html">Registar uma farmácia / Criar conta</a></p>
+        <div class="auth-note">O acesso é validado no Supabase e limitado à função e à farmácia associada à sua conta.</div>
+        <p style="margin-top:12px;text-align:center"><a class="auth-link" href="./adesao.html">Registar uma farmácia / Criar conta</a></p>
       </section>`;
     document.body.append(gate);
-    const msg = (s, ok=false) => { const el=document.getElementById('authMessage');el.textContent=s;el.style.color=ok?'#176b59':'#a33'; };
-    let checkingAccess = false;
-    const reveal = async (session) => {
-      if (!session) { shell.hidden=true; gate.hidden=false; return; }
-      if (checkingAccess) return;
-      checkingAccess = true;
+
+    const message = (value, ok=false) => {
+      const el = document.getElementById('authMessage');
+      el.textContent = value;
+      el.style.color = ok ? '#176b59' : '#a33';
+    };
+    const setBusy = (busy, label='A validar…') => {
+      const button = document.getElementById('authSubmit');
+      button.disabled = busy;
+      button.textContent = busy ? label : 'Entrar';
+      document.getElementById('authEmail').disabled = busy;
+      document.getElementById('authPassword').disabled = busy;
+    };
+    const explainAuthError = error => {
+      const code = error?.code || error?.name || '';
+      const raw = String(error?.message || '').toLowerCase();
+      if (code === 'invalid_credentials' || raw.includes('invalid login credentials') || raw.includes('invalid_credentials')) {
+        return 'E-mail ou palavra-passe incorrectos, ou conta ainda não registada. Confirme os dados ou utilize “Esqueci a palavra-passe”.';
+      }
+      if (raw.includes('fetch') || raw.includes('network') || raw.includes('failed to fetch')) {
+        return 'Não foi possível contactar o servidor de autenticação. Verifique a Internet e tente novamente.';
+      }
+      return error?.message || 'Não foi possível iniciar sessão. Tente novamente.';
+    };
+
+    async function loadPanel(path) {
+      if (appLoaded) return;
+      message('Acesso confirmado. A carregar os módulos e os dados…', true);
+      const script = document.createElement('script');
+      script.src = path;
+      script.onload = () => {
+        appLoaded = true;
+        message('Painel carregado.', true);
+      };
+      script.onerror = () => {
+        appLoaded = false;
+        shell.hidden = true;
+        gate.hidden = false;
+        message('A autenticação foi aceite, mas não foi possível carregar o painel. Actualize a página e tente novamente.');
+        script.remove();
+      };
+      document.body.append(script);
+    }
+
+    async function reveal(session) {
+      if (!session?.user?.id) {
+        shell.hidden = true;
+        gate.hidden = false;
+        return;
+      }
+
+      message('Conta autenticada. A consultar as permissões no banco de dados…', true);
       try {
+        // Primeiro: confirmar se o utilizador pertence à administração central.
         const { data: admin, error: adminError } = await sb
-          .from('platform_admins').select('user_id').eq('user_id', session.user.id).maybeSingle();
-        if (adminError) throw adminError;
-        let appScript = './saas.js';
+          .from('platform_admins')
+          .select('user_id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (adminError) throw new Error('Falha ao consultar permissões de administrador: ' + adminError.message);
+
+        let panelPath = './saas.js';
         let accessLabel = 'Super Administrador';
+
         if (!admin) {
+          // Se não for administrador central, procurar uma associação activa a uma farmácia.
           const { data: memberships, error: memberError } = await sb
             .from('pharmacy_members')
             .select('pharmacy_id,role,status,pharmacies(id,name,status,currency_code,country_code)')
-            .eq('user_id', session.user.id).eq('status','active');
-          if (memberError) throw memberError;
-          const active = (memberships || []).filter(m => m.pharmacies && m.pharmacies.status === 'active');
-          if (!active.length) {
-            shell.hidden = true; gate.hidden = false;
-            msg('A conta foi autenticada, mas ainda não está associada a uma farmácia activa. Conclua a adesão ou peça ao administrador da farmácia para atribuir acesso.');
+            .eq('user_id', session.user.id)
+            .eq('status', 'active');
+
+          if (memberError) throw new Error('Falha ao consultar a associação à farmácia: ' + memberError.message);
+
+          const active = (memberships || []).filter(item =>
+            item.pharmacies && item.pharmacies.status === 'active'
+          );
+
+          if (active.length === 0) {
+            shell.hidden = true;
+            gate.hidden = false;
+            message('A conta existe e a palavra-passe foi aceite, mas ainda não tem acesso atribuído a uma farmácia activa. Peça ao administrador para associar esta conta.');
             return;
           }
+
           if (active.length > 1) {
-            shell.hidden = true; gate.hidden = false;
-            msg('Esta conta pertence a mais de uma farmácia. Solicite ao administrador a selecção da unidade antes de continuar.');
+            shell.hidden = true;
+            gate.hidden = false;
+            message('A conta está associada a mais de uma farmácia. É necessário seleccionar a unidade antes de abrir o sistema.');
             return;
           }
+
           window.KANAWA_PHARMACY_CONTEXT = active[0];
-          appScript = './app.js';
-          accessLabel = active[0].role.replaceAll('_',' ');
+          panelPath = './app.js';
+          accessLabel = String(active[0].role || 'utilizador').replaceAll('_', ' ');
         }
-        gate.hidden=true; shell.hidden=false;
-        const userButton=document.getElementById('userButton');
-        if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent=accessLabel;}
-        if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src=appScript;script.onerror=()=>{msg('Falha ao carregar o painel. Actualize a página.');gate.hidden=false;shell.hidden=true;};document.body.append(script);}
+
+        const userButton = document.getElementById('userButton');
+        if (userButton) {
+          userButton.querySelector('b').textContent = session.user.email || 'Utilizador';
+          userButton.querySelector('small').textContent = accessLabel;
+        }
+
+        gate.hidden = true;
+        shell.hidden = false;
+        await loadPanel(panelPath);
       } catch (error) {
-        shell.hidden=true; gate.hidden=false;
-        msg('Não foi possível validar as permissões. Tente novamente.');
-        console.error('[KANAWA AUTH] Falha ao validar Super Administrador:', error);
-      } finally {
-        checkingAccess = false;
+        console.error('[KANAWA AUTH] Erro ao validar o acesso:', error);
+        shell.hidden = true;
+        gate.hidden = false;
+        message(error.message || 'A conta foi autenticada, mas não foi possível consultar as permissões no banco de dados.');
       }
-    };
-    document.getElementById('authForm').addEventListener('submit',async e=>{
-      e.preventDefault();
-      const button=document.getElementById('authSubmit');button.disabled=true;button.textContent='A validar…';msg('');
-      try{
-        const email=document.getElementById('authEmail').value.trim();
-        const password=document.getElementById('authPassword').value;
-        const {data,error}=await sb.auth.signInWithPassword({email,password});
-        if(error)throw error;
+    }
+
+    document.getElementById('authForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      if (authInProgress) return;
+      authInProgress = true;
+      setBusy(true);
+      message('A verificar o e-mail e a palavra-passe no servidor…', true);
+
+      try {
+        if (!sb) throw new Error('O cliente Supabase não foi inicializado. Verifique a ligação do sistema.');
+
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+        if (error) throw error;
+        if (!data?.session?.user?.id) {
+          throw new Error('O servidor não devolveu uma sessão válida. Termine e tente novamente.');
+        }
+
         await reveal(data.session);
-      }catch(error){msg(error.message||'Não foi possível iniciar sessão.');}
-      finally{button.disabled=false;button.textContent='Entrar';}
+      } catch (error) {
+        console.error('[KANAWA AUTH] Falha no login:', error);
+        message(explainAuthError(error));
+      } finally {
+        authInProgress = false;
+        setBusy(false);
+      }
     });
-    document.getElementById('forgotPassword').addEventListener('click',async()=>{
-      const email=document.getElementById('authEmail').value.trim();
-      if(!email){msg('Introduza primeiro o seu e-mail.');return;}
-      msg('A enviar pedido…',true);
-      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://farmacia.kanawasoft.shop/'});
-      msg(error?error.message:'Se a conta existir, receberá um e-mail com instruções de recuperação.',!error);
+
+    document.getElementById('forgotPassword').addEventListener('click', async () => {
+      const email = document.getElementById('authEmail').value.trim();
+      if (!email) {
+        message('Introduza primeiro o seu e-mail.');
+        return;
+      }
+      message('A enviar pedido de recuperação…', true);
+      try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://farmacia.kanawasoft.shop/'
+        });
+        message(error ? explainAuthError(error) : 'Se a conta puder recuperar a palavra-passe, receberá um e-mail com as instruções.', !error);
+      } catch (error) {
+        message(explainAuthError(error));
+      }
     });
-    // Não executar consultas ao banco dentro do callback de onAuthStateChange:
-    // o cliente Auth mantém um lock durante o evento e isso pode bloquear o login.
-    // O formulário trata SIGNED_IN explicitamente; aqui tratamos apenas o logout.
-    sb.auth.onAuthStateChange((event)=>{
-      if(event === 'SIGNED_OUT'){
+
+    // Não fazer consultas à base de dados dentro do callback Auth.
+    // O login e a validação de permissões são controlados pelo formulário acima.
+    sb?.auth.onAuthStateChange(event => {
+      if (event === 'SIGNED_OUT') {
         shell.hidden = true;
         gate.hidden = false;
         appLoaded = false;
         window.KANAWA_PHARMACY_CONTEXT = null;
       }
     });
-    const {data,error}=await sb.auth.getSession();
-    if(error){msg(error.message);gate.hidden=false;}else await reveal(data.session);
+
+    // Restaurar uma sessão anterior sem competir com um login iniciado pelo utilizador.
+    try {
+      const { data, error } = await sb.auth.getSession();
+      if (error) throw error;
+      if (data.session) await reveal(data.session);
+    } catch (error) {
+      console.error('[KANAWA AUTH] Não foi possível restaurar a sessão:', error);
+      message('Não foi possível verificar a sessão guardada. Entre novamente com o seu e-mail e palavra-passe.');
+    }
   </script>
 </body>
 </html>
