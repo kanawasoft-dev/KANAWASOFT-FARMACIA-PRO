@@ -2,23 +2,28 @@ name: Deploy KANAWA SOFT Farmácia PRO to Cloudflare Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "frontend/**"
-      - "wrangler.toml"
-      - ".github/workflows/deploy-pages.yml"
+    branches: [main]
+    paths: ["frontend/**", "wrangler.toml", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Avisar se o segredo ainda não estiver configurado
+        if: env.CF_TOKEN == ''
+        run: echo 'Configure CLOUDFLARE_API_TOKEN em Settings > Secrets and variables > Actions para activar a publicação.'
       - name: Deploy frontend to Cloudflare Pages
+        if: env.CF_TOKEN != ''
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          apiToken: ${{ env.CF_TOKEN }}
           accountId: bdee5b7062883657a07bf88e0f229ce7
           command: pages deploy frontend --project-name=kanawasoft-farmacia-pro --branch=main
