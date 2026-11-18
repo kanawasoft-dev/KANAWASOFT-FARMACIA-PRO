@@ -1,60 +1,61 @@
 # KANAWA SOFT FARMÁCIA PRO
 
-Sistema de Gestão de Farmácia com arquitectura SaaS, desenvolvido pela KANAWA SOFT.
+Plataforma SaaS de gestão de farmácias da KANAWA SOFT, com portal de adesão empresarial e Central SaaS.
 
-> Estado do repositório: estrutura inicial. Os módulos funcionais, a API e a base de dados ainda devem ser integrados e testados antes de qualquer utilização real.
+## Estado verificado em 18/11/2026
+
+- Projecto Supabase **KANAWASOFT-FARMACIA-PRO** ligado e activo (região eu-west-1).
+- Cliente browser em `frontend/supabase.js`, usando apenas chave publishable.
+- Migrações de identidade, multi-farmácia, módulos operacionais e documentos empresariais aplicadas no projecto Supabase.
+- 20 tabelas públicas verificadas com Row Level Security activo.
+- Portal de registo empresarial: `frontend/adesao.html`.
+- Central SaaS: `frontend/index.html`, protegida por Supabase Auth e pela tabela `platform_admins`.
+- A base de dados encontra-se inicialmente sem farmácias/candidaturas/documentos.
+- A interface operacional antiga em `frontend/app.js` continua a ser um protótipo local e não deve ser confundida com módulos já ligados ao PostgreSQL.
 
 ## Estrutura
 
-- `frontend/` — aplicação web (HTML, CSS, JavaScript).
-- `backend/` — API e serviços do servidor.
-- `database/` — migrações, esquema e dados de demonstração.
-- `saas/` — gestão central, tenants, planos e subscrições.
-- `docs/` — arquitectura, instalação, operação e segurança.
+- `frontend/` — páginas HTML, CSS e JavaScript.
+- `database/migrations/` — migrações SQL aplicadas no Supabase.
+- `backend/` — reservado para serviços adicionais; a autenticação, PostgreSQL, API e Storage actuais são fornecidos pelo Supabase.
+- `docs/` — instalação, configuração e segurança.
 
-## Módulos previstos
+## Ver no navegador
 
-1. Painel / indicadores
-2. Ponto de venda (POS)
-3. Medicamentos e produtos
-4. Stock e inventário
-5. Lotes e validade (FEFO)
-6. Compras e fornecedores
-7. Clientes
-8. Receitas e dispensa
-9. Caixa e turnos
-10. Finanças
-11. Funcionários e utilizadores
-12. Perfis e permissões
-13. Relatórios
-14. Configurações
-15. Auditoria
-16. Administração SaaS
+A pasta de publicação do Cloudflare Pages é `frontend` e não necessita de comando de build.
 
-## Tecnologias previstas
+- Central SaaS: `/`
+- Adesão e registo de farmácias: `/adesao.html`
 
-- Frontend: HTML, CSS e JavaScript.
-- Backend: Node.js e Express.
-- Base de dados: PostgreSQL.
-- Autenticação: sessões/tokens com hash seguro de palavras-passe; MFA configurável.
-- SaaS: isolamento de dados por farmácia/tenant e controlo de planos.
+Domínio pretendido: https://farmacia.kanawasoft.shop
 
-As versões e dependências concretas serão fixadas nos ficheiros de configuração do projecto.
+A publicação do domínio depende de ligar este repositório ao Cloudflare Pages e configurar o domínio. A existência dos ficheiros no GitHub, por si só, não publica o site.
 
-## Regras essenciais
+## Configuração de publicação Cloudflare Pages
 
-- Não permitir venda de lotes expirados.
-- Aplicar FEFO (primeiro a expirar, primeiro a sair) quando adequado.
-- Bloquear stock negativo, salvo regra explícita e autorizada.
-- Registar operações sensíveis em auditoria.
-- Validar permissões no servidor, não apenas na interface.
-- Isolar os dados de cada farmácia no backend e na base de dados.
-- Não guardar segredos, tokens ou palavras-passe no repositório.
+- Framework preset: None
+- Build command: deixar vazio
+- Build output directory: `frontend`
+- Root directory: deixar vazio
+- Associar o domínio personalizado `farmacia.kanawasoft.shop`
 
-## Desenvolvimento
+## Segurança
 
-Consulte os README de cada pasta e a documentação em `docs/`.
+- Nunca colocar `service_role` ou `sb_secret` no browser.
+- O frontend utiliza apenas a chave publishable.
+- As tabelas expostas têm RLS activo.
+- Documentos empresariais são guardados no bucket privado `pharmacy-legal-documents`.
+- O primeiro Super Admin é atribuído por operação administrativa segura, nunca por auto-registo público.
+- Não usar dados reais de pacientes nem operações comerciais antes de concluir os testes funcionais, fiscais, farmacêuticos e de segurança.
+
+## Próximas fases
+
+1. Publicar/confirmar o domínio no Cloudflare Pages.
+2. Validar Site URL e Redirect URLs no Supabase Auth.
+3. Testar o fluxo completo de adesão e aprovação com uma conta de teste.
+4. Integrar os módulos operacionais (POS, compras, stock, lotes, caixa, finanças e relatórios) nas tabelas PostgreSQL; actualmente o antigo `app.js` permanece protótipo local.
+5. Completar testes de segurança, auditoria, backups e regras legais aplicáveis em Angola.
 
 ## Aviso
 
-Este repositório não deve ser considerado pronto para produção enquanto não forem concluídos testes funcionais, de segurança, recuperação de backups, isolamento multi-tenant e validação dos requisitos legais/fiscais e farmacêuticos aplicáveis em cada país.
+A aprovação comercial pela Central SaaS não substitui alvarás, licenças ou autorizações das autoridades competentes.
