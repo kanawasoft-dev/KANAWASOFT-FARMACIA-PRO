@@ -75,12 +75,37 @@
       </section>`;
     document.body.append(gate);
     const msg = (s, ok=false) => { const el=document.getElementById('authMessage');el.textContent=s;el.style.color=ok?'#176b59':'#a33'; };
+    let checkingAccess = false;
     const reveal = async (session) => {
       if (!session) { shell.hidden=true; gate.hidden=false; return; }
-      gate.hidden=true; shell.hidden=false;
-      const userButton=document.getElementById('userButton');
-      if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent='Sessão autenticada';}
-      if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src='./app.js';document.body.append(script);}
+      if (checkingAccess) return;
+      checkingAccess = true;
+      try {
+        // Acesso ao painel SaaS apenas para utilizadores promovidos na tabela protegida.
+        const { data: admin, error: accessError } = await sb
+          .from('platform_admins')
+          .select('user_id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (accessError) throw accessError;
+        if (!admin) {
+          await sb.auth.signOut();
+          shell.hidden = true;
+          gate.hidden = false;
+          msg('A sua conta não tem permissão de Super Administrador SaaS.');
+          return;
+        }
+        gate.hidden=true; shell.hidden=false;
+        const userButton=document.getElementById('userButton');
+        if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent='Super Administrador';}
+        if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src='./app.js';document.body.append(script);}
+      } catch (error) {
+        shell.hidden=true; gate.hidden=false;
+        msg('Não foi possível validar as permissões. Tente novamente.');
+        console.error('[KANAWA AUTH] Falha ao validar Super Administrador:', error);
+      } finally {
+        checkingAccess = false;
+      }
     };
     document.getElementById('authForm').addEventListener('submit',async e=>{
       e.preventDefault();
