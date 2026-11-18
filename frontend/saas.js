@@ -121,6 +121,12 @@
     const {data:{user}}=await sb.auth.getUser();
     const {error}=await sb.from("pharmacy_documents").update({status,reviewer_note:note||null,reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",id);
     if(error)throw error;
+    if(status==="rejected"){
+      const {error:appError}=await sb.from("pharmacy_applications").update({
+        status:"rejected",rejection_reason:note,reviewed_by:user.id,reviewed_at:new Date().toISOString()
+      }).eq("pharmacy_id",state.documents.find(x=>x.id===id)?.pharmacy_id);
+      if(appError)throw appError;
+    }
     toast("Documento actualizado.");await refresh();state.page="application-detail";render();
   }
   async function setApplicationStatus(pharmacyId,status){
