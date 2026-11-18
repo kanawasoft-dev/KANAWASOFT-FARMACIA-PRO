@@ -121,6 +121,18 @@
     const {data:{user}}=await sb.auth.getUser();
     const {error}=await sb.from("pharmacy_documents").update({status,reviewer_note:note||null,reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",id);
     if(error)throw error;
+    const reviewedDoc=state.documents.find(x=>x.id===id);
+    if(reviewedDoc){
+      const {error:auditError}=await sb.from("audit_logs").insert({
+        pharmacy_id:reviewedDoc.pharmacy_id,
+        actor_id:user.id,
+        action:"pharmacy_document_"+status,
+        entity_type:"pharmacy_document",
+        entity_id:id,
+        details:{document_type:reviewedDoc.document_type,reviewer_note:note||null}
+      });
+      if(auditError)throw auditError;
+    }
     if(status==="rejected"){
       const {error:appError}=await sb.from("pharmacy_applications").update({
         status:"rejected",rejection_reason:note,reviewed_by:user.id,reviewed_at:new Date().toISOString()
