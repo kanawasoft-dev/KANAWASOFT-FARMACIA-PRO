@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b35">
+  <title>Kanawa Soft Farmácia</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">K+</div>
+        <div><strong>KANAWA SOFT</strong><small>FARMÁCIA</small></div>
+      </div>
+      <div class="side-caption">MENU PRINCIPAL</div>
+      <nav id="navigation" aria-label="Navegação principal"></nav>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span> Sistema local
+        <small>Kanawa Soft · Farmácia</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile-menu" id="menuToggle" aria-label="Abrir menu">☰</button>
+        <div class="breadcrumb"><span>Kanawa Soft</span><b>/</b><strong id="pageTitle">Painel</strong></div>
+        <div class="top-actions">
+          <span class="today" id="today"></span>
+          <button class="user-chip" id="userButton"><span class="avatar">KS</span><span><b>Administrador</b><small>Perfil principal</small></span></button>
+        </div>
+      </header>
+      <section class="content" id="content" aria-live="polite"></section>
+      <footer class="app-footer">© <span id="year"></span> Kanawa Soft · Gestão integrada de farmácia</footer>
+    </main>
+  </div>
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <dialog id="recordDialog" class="record-dialog">
+    <form id="recordForm" method="dialog">
+      <div class="dialog-head"><div><small id="dialogEyebrow">REGISTO</small><h2 id="dialogTitle">Novo registo</h2></div><button class="icon-btn" type="button" id="closeDialog">✕</button></div>
+      <div class="form-grid" id="formFields"></div>
+      <div class="dialog-actions"><button type="button" class="btn btn-light" id="cancelDialog">Cancelar</button><button class="btn btn-primary" type="submit">Guardar registo</button></div>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
