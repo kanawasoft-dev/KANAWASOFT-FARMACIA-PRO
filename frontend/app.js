@@ -76,7 +76,7 @@
     save();closeDialog();go(id);toast("Registo guardado com sucesso.")};
   $("#closeDialog").onclick=closeDialog;$("#cancelDialog").onclick=closeDialog;
   $("#menuToggle").onclick=()=>$("#sidebar").classList.toggle("open");
-  $("#userButton").onclick=()=>toast("Sessão demonstrativa: configure autenticação no servidor.");
+  $("#userButton").onclick=async()=>{const sb=window.KANAWA_SUPABASE;if(!sb){toast("Serviço de autenticação indisponível.");return}if(confirm("Terminar a sessão desta conta?")){const {error}=await sb.auth.signOut();if(error)toast("Não foi possível terminar sessão: "+error.message);else window.location.reload()}};
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="kanawasoft-farmacia-backup.json";a.click();URL.revokeObjectURL(url);toast("Exportação iniciada.")}
   save();go("dashboard");
 })();
