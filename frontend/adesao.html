@@ -37,15 +37,15 @@
         </div>
         <h3>Representante legal</h3><div class="grid">
           <label>Nome do representante<input name="representative_name" required></label>
-          <label>N.º do Bilhete de Identidade<input name="representative_bi"></label>
+          <label>N.º do Bilhete de Identidade<input name="representative_bi" required></label>
         </div>
         <h3>Licenciamento e responsável técnico</h3><div class="grid">
-          <label>N.º do alvará/licença da farmácia<input name="pharmacy_license_number"></label>
-          <label>Director técnico / farmacêutico responsável<input name="technical_director_name"></label>
-          <label>Registo ou licença profissional<input name="technical_director_license"></label>
+          <label>N.º do alvará/licença da farmácia<input name="pharmacy_license_number" required></label>
+          <label>Director técnico / farmacêutico responsável<input name="technical_director_name" required></label>
+          <label>Registo ou licença profissional<input name="technical_director_license" required></label>
         </div>
         <h3>Documentos da empresa</h3>
-        <p class="hint">Pode anexar PDF, JPG ou PNG até 15 MB por ficheiro. Os documentos ficam num armazenamento privado, não público.</p>
+        <p class="hint">Anexe separadamente os cinco grupos mínimos: Certidão comercial, Cartão de contribuinte/NIF, Alvará ou licença, BI do representante e documento do director técnico. Seleccione um tipo, carregue o ficheiro e guarde; repita para cada tipo. PDF, JPG ou PNG até 15 MB. O armazenamento é privado. A lista deve ser validada com a autoridade competente e pode exigir documentos adicionais.</p>
         <div class="grid">
           <label>Tipo de documento<select id="documentType"><option value="Certidão comercial">Certidão comercial</option><option value="Cartão de contribuinte / NIF">Cartão de contribuinte / NIF</option><option value="Alvará ou licença">Alvará ou licença</option><option value="BI do representante">BI do representante</option><option value="Documento do director técnico">Documento do director técnico</option><option value="Outro documento">Outro documento</option></select></label>
           <label>Ficheiros<input id="documents" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"></label>
