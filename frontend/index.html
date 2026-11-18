@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123b35">
-  <title>Kanawa Soft Farmácia</title>
+  <title>Kanawa Soft · Central SaaS</title>
   <link rel="stylesheet" href="styles.css">\n  <link rel="stylesheet" href="saas.css">
 </head>
 <body>
@@ -62,8 +62,8 @@
     gate.innerHTML = `
       <section class="auth-card">
         <div class="auth-brand">KANAWA SOFT · FARMÁCIA PRO</div>
-        <h1 id="authTitle">Acesso à sua farmácia</h1>
-        <p id="authDescription">Entre com a sua conta autorizada para continuar.</p>
+        <h1 id="authTitle">Central de Administração SaaS</h1>
+        <p id="authDescription">Entre com a conta de Super Administrador para gerir a plataforma.</p>
         <form id="authForm">
           <label class="auth-field"><span>E-mail</span><input id="authEmail" type="email" autocomplete="username" required placeholder="nome@empresa.com"></label>
           <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="A sua palavra-passe"></label>
@@ -71,7 +71,7 @@
         </form>
         <button class="auth-link" id="forgotPassword" type="button">Esqueci a palavra-passe</button>
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
-        <div class="auth-note">Acesso protegido por autenticação Supabase. O acesso aos dados depende também das permissões da sua farmácia.</div>
+        <div class="auth-note">Acesso exclusivo a administradores autorizados da plataforma KANAWA SOFT.</div>
       </section>`;
     document.body.append(gate);
     const msg = (s, ok=false) => { const el=document.getElementById('authMessage');el.textContent=s;el.style.color=ok?'#176b59':'#a33'; };
