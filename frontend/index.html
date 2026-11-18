@@ -43,12 +43,67 @@
       <div class="dialog-actions"><button type="button" class="btn btn-light" id="cancelDialog">Cancelar</button><button class="btn btn-primary" type="submit">Guardar registo</button></div>
     </form>
   </dialog>
+  <style>
+    .auth-gate{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f3f6f5;font-family:Arial,sans-serif}
+    .auth-card{width:min(100%,420px);background:#fff;border:1px solid #e1e9e6;border-radius:18px;padding:30px;box-shadow:0 18px 60px #173d3518}
+    .auth-brand{font-weight:800;letter-spacing:.08em;color:#123b35}.auth-card h1{font-size:24px;margin:22px 0 8px;color:#173d35}.auth-card p{color:#66756f;line-height:1.5}
+    .auth-field{display:block;margin:16px 0}.auth-field span{display:block;font-size:13px;font-weight:700;margin-bottom:7px;color:#344b43}.auth-field input{box-sizing:border-box;width:100%;padding:13px;border:1px solid #ccd8d3;border-radius:9px;font:inherit}
+    .auth-submit{width:100%;padding:13px;border:0;border-radius:9px;background:#123b35;color:white;font-weight:700;cursor:pointer;margin-top:8px}.auth-link{border:0;background:none;color:#176b59;text-decoration:underline;cursor:pointer;padding:12px 0}.auth-message{min-height:22px;font-size:13px;color:#a33}.auth-note{font-size:12px;color:#7b8983;margin-top:18px}
+  </style>
   <script type="module">
     import './supabase.js';
-    const app = document.createElement('script');
-    app.src = './app.js';
-    app.defer = false;
-    document.body.appendChild(app);
+    const sb = window.KANAWA_SUPABASE;
+    let appLoaded = false;
+    const shell = document.querySelector('.app-shell');
+    const footer = document.querySelector('.toast-region');
+    shell.hidden = true;
+    const gate = document.createElement('main');
+    gate.className = 'auth-gate';
+    gate.innerHTML = `
+      <section class="auth-card">
+        <div class="auth-brand">KANAWA SOFT · FARMÁCIA PRO</div>
+        <h1 id="authTitle">Acesso à sua farmácia</h1>
+        <p id="authDescription">Entre com a sua conta autorizada para continuar.</p>
+        <form id="authForm">
+          <label class="auth-field"><span>E-mail</span><input id="authEmail" type="email" autocomplete="username" required placeholder="nome@empresa.com"></label>
+          <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="A sua palavra-passe"></label>
+          <button class="auth-submit" id="authSubmit" type="submit">Entrar</button>
+        </form>
+        <button class="auth-link" id="forgotPassword" type="button">Esqueci a palavra-passe</button>
+        <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
+        <div class="auth-note">Acesso protegido por autenticação Supabase. O acesso aos dados depende também das permissões da sua farmácia.</div>
+      </section>`;
+    document.body.append(gate);
+    const msg = (s, ok=false) => { const el=document.getElementById('authMessage');el.textContent=s;el.style.color=ok?'#176b59':'#a33'; };
+    const reveal = async (session) => {
+      if (!session) { shell.hidden=true; gate.hidden=false; return; }
+      gate.hidden=true; shell.hidden=false;
+      const userButton=document.getElementById('userButton');
+      if(userButton){const email=session.user.email||'Utilizador';userButton.querySelector('b').textContent=email;userButton.querySelector('small').textContent='Sessão autenticada';}
+      if(!appLoaded){appLoaded=true;const script=document.createElement('script');script.src='./app.js';document.body.append(script);}
+    };
+    document.getElementById('authForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const button=document.getElementById('authSubmit');button.disabled=true;button.textContent='A validar…';msg('');
+      try{
+        const email=document.getElementById('authEmail').value.trim();
+        const password=document.getElementById('authPassword').value;
+        const {data,error}=await sb.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        await reveal(data.session);
+      }catch(error){msg(error.message||'Não foi possível iniciar sessão.');}
+      finally{button.disabled=false;button.textContent='Entrar';}
+    });
+    document.getElementById('forgotPassword').addEventListener('click',async()=>{
+      const email=document.getElementById('authEmail').value.trim();
+      if(!email){msg('Introduza primeiro o seu e-mail.');return;}
+      msg('A enviar pedido…',true);
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://farmacia.kanawasoft.shop/'});
+      msg(error?error.message:'Se a conta existir, receberá um e-mail com instruções de recuperação.',!error);
+    });
+    sb.auth.onAuthStateChange((_event,session)=>{reveal(session);});
+    const {data,error}=await sb.auth.getSession();
+    if(error){msg(error.message);gate.hidden=false;}else await reveal(data.session);
   </script>
 </body>
 </html>
