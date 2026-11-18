@@ -11,10 +11,10 @@
   const money=v=>currency.format(Number(v)||0), date=v=>v?new Date(v).toLocaleDateString("pt-AO"):"—";
   const state={page:"dashboard",data:{},profile:null,loading:false};
   const modules=[
-    ["dashboard","▦","Painel"],["sales","🛒","Vendas / POS"],["products","▤","Medicamentos"],["stock","▥","Stock"],
-    ["batches","◷","Lotes e validade"],["purchases","🧾","Compras"],["suppliers","♧","Fornecedores"],["customers","♙","Clientes"],
-    ["prescriptions","✚","Receitas médicas"],["cash","＄","Caixa e turnos"],["finance","▱","Finanças"],
-    ["employees","♙","Funcionários"],["users","⚿","Utilizadores"],["reports","▧","Relatórios"],["settings","⚙","Configurações"],["audit","◉","Auditoria"]
+    ["dashboard","▦","Painel"],["sales","▣","Vendas / POS"],["products","▤","Medicamentos"],["stock","▥","Stock"],
+    ["batches","◷","Lotes e validade"],["purchases","⇩","Compras"],["suppliers","♧","Fornecedores"],["customers","♙","Clientes"],
+    ["prescriptions","✚","Receitas médicas"],["cash","◉","Caixa e turnos"],["finance","▱","Finanças"],
+    ["employees","♟","Funcionários"],["users","⚿","Utilizadores"],["reports","▧","Relatórios"],["settings","⚙","Configurações"],["audit","◎","Auditoria"]
   ];
   const cfg={
     products:{table:"products",title:"Medicamentos e produtos",desc:"Catálogo de medicamentos, preços e requisitos de receita.",fields:[["sku","Código / SKU","text",1],["name","Nome comercial","text",1],["generic_name","Princípio activo","text"],["category","Categoria","text",1],["unit","Unidade","text"],["barcode","Código de barras","text"],["cost_price","Preço de custo (Kz)","number"],["sale_price","Preço de venda (Kz)","number",1],["min_stock","Stock mínimo","number"],["requires_prescription","Exige receita?","checkbox"],["active","Activo?","checkbox"]],cols:[["sku","Código"],["name","Produto"],["category","Categoria"],["sale_price","Preço"],["stock","Stock"],["active","Activo"]]},
