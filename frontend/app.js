@@ -51,7 +51,7 @@
     <div class="dashboard-grid"><section class="panel"><div class="panel-head"><h3>Acesso rápido</h3></div><div class="quick-grid">${[["Nova venda","sales"],["Novo medicamento","products"],["Consultar stock","stock"],["Registar compra","purchases"],["Lotes e validade","batches"],["Relatórios","reports"]].map(([l,id])=>`<button class="quick-action" data-go="${id}"><b>${l}</b><small>Abrir módulo</small></button>`).join("")}</div></section>
     <section class="panel"><div class="panel-head"><h3>Alertas</h3></div>${low.length?low.map(p=>`<div class="alert-row"><b>${esc(p.name)}</b><span class="pill">Stock baixo</span></div>`).join(""):"<div class='empty'>Sem alertas de stock mínimo.</div>"}${expired.length?`<div class="notice">${expired.length} lote(s) expirado(s). Não dispensar sem revisão.</div>`:""}</section></div>`;
   }
-  function stockOf(productId){const batches=(state.data.product_batches||[]).filter(b=>b.product_id===productId).reduce((n,b)=>n+Number(b.quantity||0),0);const moves=(state.data.stock_movements||[]).filter(m=>m.product_id===productId).reduce((n,m)=>n+((["purchase","adjustment_in","return"].includes(m.movement_type)?1:-1)*Number(m.quantity||0)),0);return batches+moves;}
+  function stockOf(productId){return (state.data.product_batches||[]).filter(b=>b.product_id===productId).reduce((n,b)=>n+Number(b.quantity||0),0);}
   function fmtCell(k,v,row){
     if(k==="stock")return stockOf(row.id);
     if(["sale_price","cost_price","amount","total","subtotal"].includes(k))return money(v);
