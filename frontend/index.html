@@ -71,7 +71,7 @@
         </form>
         <button class="auth-link" id="forgotPassword" type="button">Esqueci a palavra-passe</button>
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
-        <div class="auth-note">Acesso exclusivo a administradores autorizados da plataforma KANAWA SOFT.</div>
+        <div class="auth-note">Acesso exclusivo a administradores autorizados da plataforma KANAWA SOFT.</div>\n        <p style="margin-top:12px;text-align:center"><a class="auth-link" href="./adesao.html">Registar uma farmácia / Criar conta</a></p>
       </section>`;
     document.body.append(gate);
     const msg = (s, ok=false) => { const el=document.getElementById('authMessage');el.textContent=s;el.style.color=ok?'#176b59':'#a33'; };
