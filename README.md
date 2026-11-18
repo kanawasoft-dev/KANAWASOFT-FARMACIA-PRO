@@ -7,7 +7,7 @@ Plataforma SaaS de gestão de farmácias da KANAWA SOFT, com portal de adesão e
 - Projecto Supabase **KANAWASOFT-FARMACIA-PRO** ligado e activo (região eu-west-1).
 - Cliente browser em `frontend/supabase.js`, usando apenas chave publishable.
 - Migrações de identidade, multi-farmácia, módulos operacionais e documentos empresariais aplicadas no projecto Supabase.
-- 20 tabelas públicas verificadas com Row Level Security activo.
+- 21 tabelas públicas verificadas com Row Level Security activo.
 - Portal de registo empresarial: `frontend/adesao.html`.
 - Central SaaS: `frontend/index.html`, protegida por Supabase Auth e pela tabela `platform_admins`.
 - A base de dados encontra-se inicialmente sem farmácias/candidaturas/documentos.
