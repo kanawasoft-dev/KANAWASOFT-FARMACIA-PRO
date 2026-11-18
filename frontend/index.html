@@ -28,6 +28,7 @@
         <div class="breadcrumb"><span>Kanawa Soft</span><b>/</b><strong id="pageTitle">Painel</strong></div>
         <div class="top-actions">
           <span class="today" id="today"></span>
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema">☾ Tema</button>
           <button class="user-chip" id="userButton"><span class="avatar">KS</span><span><b>Conta</b><small>Sessão</small></span></button>
         </div>
       </header>
@@ -52,6 +53,20 @@
   </style>
   <script type="module">
     import './supabase.js';
+
+    const themeButton = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('kanawa-theme') || 'light';
+    document.documentElement.dataset.theme = savedTheme;
+    const paintThemeButton = () => {
+      if (themeButton) themeButton.textContent = document.documentElement.dataset.theme === 'dark' ? '☀ Tema' : '☾ Tema';
+    };
+    paintThemeButton();
+    themeButton?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('kanawa-theme', next);
+      paintThemeButton();
+    });
 
     const sb = window.KANAWA_SUPABASE;
     const shell = document.querySelector('.app-shell');
