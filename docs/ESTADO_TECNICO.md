@@ -9,7 +9,7 @@
 - Foi criado workflow de deploy Cloudflare Pages pelo GitHub Actions.
 
 ## Limitações que continuam abertas
-- O workflow de deploy só publica depois de configurar o segredo GitHub CLOUDFLARE_API_TOKEN com um token Cloudflare que tenha permissão Pages Write; as execuções sem o segredo terminam sem publicar.
+- A publicação inicial foi feita directamente via API Cloudflare, sem depender do workflow. Para futuras publicações automáticas pelo GitHub Actions, ainda é necessário configurar o segredo CLOUDFLARE_API_TOKEN com permissão Pages Write.
 - O deploy inicial ainda precisa de ser confirmado; o projecto Pages não tinha deployment na auditoria.
 - O POS ainda não grava cabeçalho + linhas + baixa de stock numa única transacção. O módulo de vendas está em consulta para evitar vendas incompletas.
 - Compras ainda não gravam cabeçalho + itens + entrada de stock numa transacção; o módulo está em consulta.
