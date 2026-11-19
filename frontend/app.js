@@ -9,7 +9,7 @@
   const pharmacyId=ctx.pharmacy_id, role=ctx.role, pharmacy=ctx.pharmacies;
   const currency=new Intl.NumberFormat("pt-AO",{style:"currency",currency:pharmacy.currency_code||"AOA",maximumFractionDigits:0});
   const money=v=>currency.format(Number(v)||0), date=v=>v?new Date(v).toLocaleDateString("pt-AO"):"—";
-  const state={page:"dashboard",data:{},profile:null,loading:false};
+  const state={page:"dashboard",data:{},profile:null,loading:false,cart:[]};
   const modules=[
     ["dashboard","▦","Painel"],["sales","▣","Vendas / POS"],["products","▤","Medicamentos"],["stock","▥","Stock"],
     ["batches","◷","Lotes e validade"],["purchases","⇩","Compras"],["suppliers","♧","Fornecedores"],["customers","♙","Clientes"],
@@ -64,6 +64,44 @@
     const add= c.readonly || !["pharmacy_owner","pharmacy_admin","pharmacist","pharmacy_technician","cashier","stock_manager","accountant"].includes(role) ? "" : `<button class="btn btn-primary" id="addRecord">＋ Novo registo</button>`;
     return head(c.title,c.desc,add)+`<div class="toolbar"><input class="search" id="tableSearch" placeholder="Pesquisar registos…"><span class="panel-sub">${rows.length} registo(s)</span></div><div class="table-card"><div class="table-wrap"><table><thead><tr>${c.cols.map(x=>`<th>${x[1]}</th>`).join("")}</tr></thead><tbody id="tableBody">${rows.length?rows.map(r=>`<tr>${c.cols.map(([k])=>`<td>${fmtCell(k,r[k],r)}</td>`).join("")}</tr>`).join(""):`<tr><td class="empty" colspan="${c.cols.length}">Sem registos nesta farmácia.</td></tr>`}</tbody></table></div></div>`;
   }
+  function availableStock(productId){
+    const today=new Date().toISOString().slice(0,10);
+    return (state.data.product_batches||[]).filter(b=>b.product_id===productId&&(!b.expiry_date||b.expiry_date>=today)).reduce((n,b)=>n+Number(b.quantity||0),0);
+  }
+  function posPage(){
+    const products=(state.data.products||[]).filter(p=>p.active);
+    const rows=state.cart.map(item=>{
+      const p=products.find(x=>x.id===item.product_id);
+      return p?'<tr><td>'+esc(p.name)+'</td><td>'+item.quantity+'</td><td>'+money(p.sale_price)+'</td><td>'+money(p.sale_price*item.quantity)+'</td><td><button class="mini-btn" data-remove-cart="'+p.id+'">Remover</button></td></tr>':'';
+    }).join('');
+    const total=state.cart.reduce((n,item)=>{const p=products.find(x=>x.id===item.product_id);return n+(p?Number(p.sale_price)*item.quantity:0);},0);
+    return head("Ponto de venda (POS)","Registe vendas com cálculo de preço no servidor e baixa automática de stock por validade.")+
+      '<section class="panel"><div class="form-grid"><div class="field"><label>Medicamento / produto</label><select id="posProduct"><option value="">Seleccione um produto</option>'+products.map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+money(p.sale_price)+' · Stock disponível: '+availableStock(p.id)+'</option>').join('')+'</select></div><div class="field"><label>Quantidade</label><input id="posQuantity" type="number" min="0.001" step="0.001" value="1"></div><div class="field"><label>Pagamento</label><select id="posPayment"><option value="cash">Numerário</option><option value="card">Cartão</option><option value="transfer">Transferência</option><option value="multicaixa_express">Multicaixa Express</option><option value="other">Outro</option></select></div><div class="field"><label>Desconto (Kz)</label><input id="posDiscount" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Imposto (Kz)</label><input id="posTax" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>ID da receita (se aplicável)</label><input id="posPrescription" type="text" placeholder="UUID da receita médica"></div><div class="field full"><button class="btn btn-light" id="posAdd">Adicionar ao carrinho</button></div></div></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Carrinho</h3><span class="panel-sub">'+state.cart.length+' linha(s)</span></div><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th><th>Total</th><th></th></tr></thead><tbody>'+ (rows||'<tr><td colspan="5" class="empty">Carrinho vazio.</td></tr>')+'</tbody></table></div><div class="page-head"><div><h2>Total estimado: '+money(total)+'</h2><p>O total definitivo será recalculado no PostgreSQL.</p></div><button class="btn btn-primary" id="posCheckout" '+(!state.cart.length?'disabled':'')+'>Finalizar venda</button></div></section>';
+  }
+  async function addPosItem(){
+    const id=$("#posProduct").value,qty=Number($("#posQuantity").value);
+    const p=(state.data.products||[]).find(x=>x.id===id);
+    if(!p||!Number.isFinite(qty)||qty<=0){toast("Seleccione um produto e uma quantidade válida.");return;}
+    if(availableStock(id)<qty){toast("Stock disponível insuficiente ou lote expirado.");return;}
+    const existing=state.cart.find(x=>x.product_id===id);
+    if(existing)existing.quantity+=qty;else state.cart.push({product_id:id,quantity:qty});
+    render();
+  }
+  async function checkoutPos(){
+    if(!state.cart.length)return;
+    const payload={p_pharmacy_id:pharmacyId,p_items:state.cart,p_payment_method:$("#posPayment").value,
+      p_discount:Number($("#posDiscount").value||0),p_tax:Number($("#posTax").value||0),
+      p_prescription_id:$("#posPrescription").value.trim()||null};
+    const button=$("#posCheckout");if(button)button.disabled=true;
+    try{
+      const {data,error}=await sb.rpc("complete_pharmacy_sale",payload);
+      if(error)throw error;
+      state.cart=[];
+      await refresh();
+      toast("Venda "+data.sale_number+" concluída. Total: "+money(data.total));
+    }catch(err){toast(err.message||"Não foi possível concluir a venda.");if(button)button.disabled=false;}
+  }
   function special(id){
     if(id==="reports"){const sales=state.data.sales||[],fin=state.data.finance_entries||[];return head("Relatórios","Indicadores financeiros e operacionais.")+`<div class="report-grid"><div class="report-box"><h3>Vendas</h3><p>${sales.length} venda(s)<br><b>${money(sales.reduce((n,x)=>n+Number(x.total||0),0))}</b></p></div><div class="report-box"><h3>Finanças</h3><p>${fin.length} lançamento(s)<br>Receitas: ${money(fin.filter(x=>x.entry_type==="income").reduce((n,x)=>n+Number(x.amount),0))}<br>Despesas: ${money(fin.filter(x=>x.entry_type==="expense").reduce((n,x)=>n+Number(x.amount),0))}</p></div><div class="report-box"><h3>Inventário</h3><p>${(state.data.products||[]).length} produtos<br>${(state.data.product_batches||[]).length} lotes</p></div></div><p><button class="btn btn-light" id="printReport">Imprimir</button></p>`;}
     if(id==="settings"){const p=state.profile||{};return head("Configurações","Dados de identificação e localização da farmácia.")+`<section class="panel"><form id="settingsForm" class="form-grid"><div class="field"><label>Nome da farmácia</label><input name="name" required value="${esc(p.name)}"></div><div class="field"><label>NIF</label><input name="nif" value="${esc(p.nif)}"></div><div class="field"><label>País (ISO)</label><input name="country_code" maxlength="2" value="${esc(p.country_code)}"></div><div class="field"><label>Moeda (ISO)</label><input name="currency_code" maxlength="3" value="${esc(p.currency_code)}"></div><div class="field"><label>Fuso horário</label><input name="timezone" value="${esc(p.timezone)}"></div><div class="field full"><button class="btn btn-primary">Guardar dados</button></div></form></section>`;}
@@ -76,11 +114,11 @@
     const label=modules.find(x=>x[0]===state.page)?.[2]||"Painel";
     $("#pageTitle").textContent=label;
     document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));
-    $("#content").innerHTML=state.page==="dashboard"?dashboard():cfg[state.page]?tablePage(state.page):special(state.page);
+    $("#content").innerHTML=state.page==="dashboard"?dashboard():state.page==="sales"?posPage():cfg[state.page]?tablePage(state.page):special(state.page);
     $("#content").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
     const add=$("#addRecord");if(add)add.onclick=()=>openForm(state.page);
     const search=$("#tableSearch");if(search)search.oninput=()=>{const term=search.value.toLowerCase();const c=cfg[state.page];const rows=getRows(state.page).filter(r=>Object.values(r).join(" ").toLowerCase().includes(term));$("#tableBody").innerHTML=rows.map(r=>`<tr>${c.cols.map(([k])=>`<td>${fmtCell(k,r[k])}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${c.cols.length}" class="empty">Sem resultados.</td></tr>`;};
-    if($("#printReport"))$("#printReport").onclick=()=>window.print();
+    if($("#posAdd"))$("#posAdd").onclick=addPosItem;\n    if($("#posCheckout"))$("#posCheckout").onclick=checkoutPos;\n    document.querySelectorAll("[data-remove-cart]").forEach(b=>b.onclick=()=>{state.cart=state.cart.filter(x=>x.product_id!==b.dataset.removeCart);render();});\n    if($("#printReport"))$("#printReport").onclick=()=>window.print();
     if($("#openCash"))$("#openCash").onclick=openCash;
     if($("#settingsForm"))$("#settingsForm").onsubmit=saveSettings;
   }
