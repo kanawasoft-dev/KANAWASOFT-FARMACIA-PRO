@@ -13,6 +13,15 @@ Plataforma SaaS de gestão de farmácias da KANAWA SOFT, com portal de adesão e
 - A base de dados encontra-se inicialmente sem farmácias/candidaturas/documentos.
 - O painel operacional `frontend/app.js` já consulta dados reais no Supabase; o POS foi ligado à RPC transaccional `complete_pharmacy_sale`, com baixa FEFO, validação de stock, caixa e auditoria. Os restantes fluxos operacionais ainda requerem integração e testes.
 
+
+## Registo, personalização e ambiente limpo
+
+- O ambiente operacional começa sem produtos, clientes, fornecedores, lotes, vendas, compras, receitas, movimentos de caixa ou dados de teste.
+- Cada empresa/farmácia mantém a sua própria organização, moeda, país, utilizadores e permissões através do modelo multiempresa (tenant).
+- O login apresenta instruções, alertas de acesso e mensagens de erro orientadas ao utilizador.
+- O registo valida o e-mail e a confirmação da palavra-passe, orienta o preenchimento dos dados legais e permite enviar esclarecimentos adicionais à equipa de análise. Esses esclarecimentos ficam guardados em `pharmacy_applications.applicant_notes` e são apresentados à Central SaaS.
+- Registos existentes de empresas, perfis e administradores não são apagados automaticamente: devem ser confirmados como demonstração antes de qualquer remoção.
+
 ## Estrutura
 
 - `frontend/` — páginas HTML, CSS e JavaScript.
