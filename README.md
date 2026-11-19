@@ -11,7 +11,7 @@ Plataforma SaaS de gestão de farmácias da KANAWA SOFT, com portal de adesão e
 - Portal de registo empresarial: `frontend/adesao.html`.
 - Central SaaS: `frontend/index.html`, protegida por Supabase Auth e pela tabela `platform_admins`.
 - A base de dados encontra-se inicialmente sem farmácias/candidaturas/documentos.
-- A interface operacional antiga em `frontend/app.js` continua a ser um protótipo local e não deve ser confundida com módulos já ligados ao PostgreSQL.
+- O painel operacional `frontend/app.js` já consulta dados reais no Supabase; o POS foi ligado à RPC transaccional `complete_pharmacy_sale`, com baixa FEFO, validação de stock, caixa e auditoria. Os restantes fluxos operacionais ainda requerem integração e testes.
 
 ## Estrutura
 
@@ -53,7 +53,7 @@ A publicação do domínio depende de ligar este repositório ao Cloudflare Page
 1. Publicar/confirmar o domínio no Cloudflare Pages.
 2. Validar Site URL e Redirect URLs no Supabase Auth.
 3. Testar o fluxo completo de adesão e aprovação com uma conta de teste.
-4. Integrar os módulos operacionais (POS, compras, stock, lotes, caixa, finanças e relatórios) nas tabelas PostgreSQL; actualmente o antigo `app.js` permanece protótipo local.
+4. Concluir os fluxos transaccionais de compras/recepção, devoluções, fecho de caixa, impressão de documentos e reconciliação financeira; o POS já chama a RPC transaccional do PostgreSQL.
 5. Completar testes de segurança, auditoria, backups e regras legais aplicáveis em Angola.
 
 ## Aviso
