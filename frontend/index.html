@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123b35">
   <title>Kanawa Soft Farmácia PRO</title>
-  <link rel="stylesheet" href="styles.css">\n  <link rel="stylesheet" href="saas.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="saas.css">
+  <link rel="stylesheet" href="auth.css">
 </head>
 <body>
   <div class="app-shell">
@@ -78,18 +80,21 @@
     gate.className = 'auth-gate';
     gate.innerHTML = `
       <section class="auth-card">
-        <div class="auth-brand">KANAWA SOFT · FARMÁCIA PRO</div>
-        <h1 id="authTitle">Acesso à plataforma</h1>
-        <p id="authDescription">Entre com a sua conta para carregar os módulos e os dados autorizados da farmácia.</p>
-        <form id="authForm">
-          <label class="auth-field"><span>E-mail</span><input id="authEmail" type="email" autocomplete="username" required placeholder="nome@empresa.com"></label>
-          <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required placeholder="A sua palavra-passe"></label>
-          <button class="auth-submit" id="authSubmit" type="submit">Entrar</button>
+        <div class="auth-brand"><span class="auth-mark">K+</span><span>KANAWA SOFT<small>FARMÁCIA PRO</small></span></div>
+        <div class="auth-kicker">ÁREA RESERVADA</div>
+        <h1 id="authTitle">Bem-vindo de volta</h1>
+        <p id="authDescription">Entre com as credenciais da sua empresa para aceder ao sistema.</p>
+        <div class="auth-alert info" role="note"><b>Antes de entrar</b><span>Utilize o e-mail registado. O acesso depende da aprovação da empresa e das permissões atribuídas.</span></div>
+        <form id="authForm" novalidate>
+          <label class="auth-field"><span>E-mail profissional</span><input id="authEmail" type="email" autocomplete="username" required placeholder="nome@empresa.com" aria-describedby="emailHelp"><small id="emailHelp">Exemplo: administrador@empresa.com</small></label>
+          <label class="auth-field"><span>Palavra-passe</span><input id="authPassword" type="password" autocomplete="current-password" required placeholder="Introduza a sua palavra-passe" aria-describedby="passwordHelp"><small id="passwordHelp">A palavra-passe é privada. Nunca a partilhe com terceiros.</small></label>
+          <button class="auth-submit" id="authSubmit" type="submit">Entrar na plataforma</button>
         </form>
-        <button class="auth-link" id="forgotPassword" type="button">Esqueci a palavra-passe</button>
+        <button class="auth-link" id="forgotPassword" type="button">Esqueci-me da palavra-passe</button>
         <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
-        <div class="auth-note">O acesso é validado no Supabase e limitado à função e à farmácia associada à sua conta.</div>
-        <p style="margin-top:12px;text-align:center"><a class="auth-link" href="./adesao.html">Registar uma farmácia / Criar conta</a></p>
+        <div class="auth-note">Protecção de conta activa: os dados só são apresentados aos utilizadores autorizados da respectiva empresa.</div>
+        <div class="auth-register">Ainda não tem conta? <a href="./adesao.html">Criar conta e registar empresa</a></div>
+        <div class="auth-footer">KANAWA SOFT · Plataforma empresarial</div>
       </section>`;
     document.body.append(gate);
 
@@ -101,7 +106,7 @@
     const setBusy = (busy, label='A validar…') => {
       const button = document.getElementById('authSubmit');
       button.disabled = busy;
-      button.textContent = busy ? label : 'Entrar';
+      button.textContent = busy ? label : 'Entrar na plataforma';
       document.getElementById('authEmail').disabled = busy;
       document.getElementById('authPassword').disabled = busy;
     };
@@ -109,12 +114,14 @@
       const code = error?.code || error?.name || '';
       const raw = String(error?.message || '').toLowerCase();
       if (code === 'invalid_credentials' || raw.includes('invalid login credentials') || raw.includes('invalid_credentials')) {
-        return 'E-mail ou palavra-passe incorrectos, ou conta ainda não registada. Confirme os dados ou utilize “Esqueci a palavra-passe”.';
+        return 'Não foi possível validar o acesso. Confirme o e-mail e a palavra-passe. Se ainda não tem conta, utilize “Criar conta e registar empresa”.';
       }
       if (raw.includes('fetch') || raw.includes('network') || raw.includes('failed to fetch')) {
         return 'Não foi possível contactar o servidor de autenticação. Verifique a Internet e tente novamente.';
       }
-      return error?.message || 'Não foi possível iniciar sessão. Tente novamente.';
+      if (raw.includes('email not confirmed')) return 'O e-mail ainda não foi confirmado. Abra a mensagem enviada para a sua caixa de correio.';
+      if (raw.includes('too many requests')) return 'Foram feitas várias tentativas. Aguarde alguns minutos e volte a tentar.';
+      return 'Ocorreu um erro ao iniciar sessão. Verifique os dados e tente novamente ou contacte o suporte.';
     };
 
     async function loadPanel(path) {
