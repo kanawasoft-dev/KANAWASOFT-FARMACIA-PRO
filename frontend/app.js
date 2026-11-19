@@ -9,7 +9,7 @@
   const pharmacyId=ctx.pharmacy_id, role=ctx.role, pharmacy=ctx.pharmacies;
   const currency=new Intl.NumberFormat("pt-AO",{style:"currency",currency:pharmacy.currency_code||"AOA",maximumFractionDigits:0});
   const money=v=>currency.format(Number(v)||0), date=v=>v?new Date(v).toLocaleDateString("pt-AO"):"—";
-  const state={page:"dashboard",data:{},profile:null,loading:false,cart:[]};
+  const state={page:"dashboard",data:{},profile:null,loading:false,cart:[],purchaseCart:[]};
   const modules=[
     ["dashboard","▦","Painel"],["sales","▣","Vendas / POS"],["products","▤","Medicamentos"],["stock","▥","Stock"],
     ["batches","◷","Lotes e validade"],["purchases","⇩","Compras"],["suppliers","♧","Fornecedores"],["customers","♙","Clientes"],
@@ -102,6 +102,62 @@
       toast("Venda "+data.sale_number+" concluída. Total: "+money(data.total));
     }catch(err){toast(err.message||"Não foi possível concluir a venda.");if(button)button.disabled=false;}
   }
+  function purchasePage(){
+    const products=(state.data.products||[]).filter(p=>p.active);
+    const suppliers=state.data.suppliers||[];
+    const rows=state.purchaseCart.map((x,i)=>{const p=products.find(p=>p.id===x.product_id);return '<tr><td>'+esc(p?.name||'Produto')+'</td><td>'+x.quantity+'</td><td>'+esc(x.lot_number)+'</td><td>'+money(x.unit_cost)+'</td><td>'+money(x.quantity*x.unit_cost)+'</td><td><button class="mini-btn" data-remove-purchase="'+i+'">Remover</button></td></tr>';}).join('');
+    const total=state.purchaseCart.reduce((n,x)=>n+x.quantity*x.unit_cost,0);
+    return head("Recepção de compras","Registe a factura, fornecedor, quantidades e lotes. A recepção actualiza o stock numa única transacção.")+
+      '<section class="panel"><div class="form-grid"><div class="field"><label>Fornecedor</label><select id="purchaseSupplier"><option value="">Sem fornecedor associado</option>'+suppliers.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')+'</select></div><div class="field"><label>N.º da factura do fornecedor</label><input id="purchaseInvoice" placeholder="Referência da factura"></div><div class="field"><label>Produto</label><select id="purchaseProduct"><option value="">Seleccione</option>'+products.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('')+'</select></div><div class="field"><label>Quantidade recebida</label><input id="purchaseQuantity" type="number" min="0.001" step="0.001" value="1"></div><div class="field"><label>Custo unitário (Kz)</label><input id="purchaseCost" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Número do lote</label><input id="purchaseLot" required></div><div class="field"><label>Validade</label><input id="purchaseExpiry" type="date"></div><div class="field"><label>Imposto (Kz)</label><input id="purchaseTax" type="number" min="0" step="0.01" value="0"></div><div class="field full"><button class="btn btn-light" id="purchaseAdd">Adicionar linha</button></div></div></section>'+
+      '<section class="panel"><div class="panel-head"><h3>Itens a receber</h3><span class="panel-sub">'+state.purchaseCart.length+' linha(s)</span></div><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Qtd.</th><th>Lote</th><th>Custo unit.</th><th>Total</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="empty">Nenhum item adicionado.</td></tr>')+'</tbody></table></div><div class="page-head"><div><h2>Total estimado: '+money(total+Number($("#purchaseTax")?.value||0))+'</h2><p>O servidor valida os produtos e cria os lotes e movimentos de stock.</p></div><button class="btn btn-primary" id="purchaseReceive" '+(!state.purchaseCart.length?'disabled':'')+'>Confirmar recepção</button></div></section>';
+  }
+  function addPurchaseItem(){
+    const productId=$("#purchaseProduct").value,quantity=Number($("#purchaseQuantity").value),unit_cost=Number($("#purchaseCost").value);
+    const lot_number=$("#purchaseLot").value.trim(),expiry_date=$("#purchaseExpiry").value||null;
+    if(!productId||!Number.isFinite(quantity)||quantity<=0||!Number.isFinite(unit_cost)||unit_cost<0||!lot_number){toast("Preencha produto, quantidade, custo e número do lote.");return;}
+    if(expiry_date&&expiry_date<new Date().toISOString().slice(0,10)){toast("A validade não pode estar no passado.");return;}
+    state.purchaseCart.push({product_id:productId,quantity,unit_cost,lot_number,expiry_date});
+    render();
+  }
+  async function receivePurchase(){
+    if(!state.purchaseCart.length)return;
+    const button=$("#purchaseReceive");if(button)button.disabled=true;
+    try{
+      const {data,error}=await sb.rpc("receive_pharmacy_purchase",{
+        p_pharmacy_id:pharmacyId,p_supplier_id:$("#purchaseSupplier").value||null,
+        p_items:state.purchaseCart,p_tax:Number($("#purchaseTax").value||0),
+        p_invoice_number:$("#purchaseInvoice").value.trim()||null,p_notes:null
+      });
+      if(error)throw error;
+      state.purchaseCart=[];await refresh();
+      toast("Compra "+data.purchase_number+" recebida. Total: "+money(data.total));
+    }catch(err){toast(err.message||"Não foi possível receber a compra.");if(button)button.disabled=false;}
+  }
+  function cashPage(){
+    const sessions=state.data.cash_sessions||[];
+    const open=sessions.find(s=>s.status==="open");
+    const movements=(state.data.cash_movements||[]).filter(m=>!open||m.session_id===open.id);
+    const total=movements.reduce((n,m)=>n+(["opening","sale","income"].includes(m.movement_type)?Number(m.amount):["expense","refund"].includes(m.movement_type)?-Number(m.amount):0),0);
+    return head("Caixa e turnos","Abertura, movimentos, conferência e fecho do caixa.")+
+      '<section class="panel"><div class="panel-head"><h3>'+ (open?'Turno actualmente aberto':'Nenhum turno aberto')+'</h3><span class="panel-sub">'+(open?'Aberto em '+date(open.opened_at):'Pode iniciar um novo turno')+'</span></div>'+
+      (open?'<p>Fundo inicial: <b>'+money(open.opening_amount)+'</b></p><p>Saldo esperado calculado: <b>'+money(total)+'</b></p><button class="btn btn-primary" id="closeCashShift">Fechar turno</button>':'<button class="btn btn-primary" id="openCashShift">Abrir turno de caixa</button>')+
+      '</section><section class="panel"><div class="panel-head"><h3>Histórico de turnos</h3></div><div class="table-wrap"><table><thead><tr><th>Estado</th><th>Abertura</th><th>Fecho</th><th>Valor inicial</th><th>Valor contado</th></tr></thead><tbody>'+
+      (sessions.map(s=>'<tr><td>'+esc(s.status)+'</td><td>'+date(s.opened_at)+'</td><td>'+date(s.closed_at)+'</td><td>'+money(s.opening_amount)+'</td><td>'+money(s.closing_amount)+'</td></tr>').join('')||'<tr><td colspan="5" class="empty">Sem turnos registados.</td></tr>')+
+      '</tbody></table></div></section>';
+  }
+  async function openCashShift(){
+    const amount=Number(prompt("Fundo inicial de caixa (Kz):","0"));
+    if(!Number.isFinite(amount)||amount<0)return;
+    try{const {error}=await sb.rpc("open_pharmacy_cash",{p_pharmacy_id:pharmacyId,p_opening_amount:amount});if(error)throw error;await refresh();toast("Turno de caixa aberto.");}
+    catch(e){toast(e.message||"Não foi possível abrir o caixa.");}
+  }
+  async function closeCashShift(){
+    const session=(state.data.cash_sessions||[]).find(s=>s.status==="open");if(!session)return;
+    const amount=Number(prompt("Introduza o valor contado fisicamente (Kz):","0"));
+    if(!Number.isFinite(amount)||amount<0)return;
+    try{const {data,error}=await sb.rpc("close_pharmacy_cash",{p_pharmacy_id:pharmacyId,p_session_id:session.id,p_counted_amount:amount});if(error)throw error;await refresh();toast("Caixa fechado. Diferença: "+money(data.variance));}
+    catch(e){toast(e.message||"Não foi possível fechar o caixa.");}
+  }
   function special(id){
     if(id==="reports"){const sales=state.data.sales||[],fin=state.data.finance_entries||[];return head("Relatórios","Indicadores financeiros e operacionais.")+`<div class="report-grid"><div class="report-box"><h3>Vendas</h3><p>${sales.length} venda(s)<br><b>${money(sales.reduce((n,x)=>n+Number(x.total||0),0))}</b></p></div><div class="report-box"><h3>Finanças</h3><p>${fin.length} lançamento(s)<br>Receitas: ${money(fin.filter(x=>x.entry_type==="income").reduce((n,x)=>n+Number(x.amount),0))}<br>Despesas: ${money(fin.filter(x=>x.entry_type==="expense").reduce((n,x)=>n+Number(x.amount),0))}</p></div><div class="report-box"><h3>Inventário</h3><p>${(state.data.products||[]).length} produtos<br>${(state.data.product_batches||[]).length} lotes</p></div></div><p><button class="btn btn-light" id="printReport">Imprimir</button></p>`;}
     if(id==="settings"){const p=state.profile||{};return head("Configurações","Dados de identificação e localização da farmácia.")+`<section class="panel"><form id="settingsForm" class="form-grid"><div class="field"><label>Nome da farmácia</label><input name="name" required value="${esc(p.name)}"></div><div class="field"><label>NIF</label><input name="nif" value="${esc(p.nif)}"></div><div class="field"><label>País (ISO)</label><input name="country_code" maxlength="2" value="${esc(p.country_code)}"></div><div class="field"><label>Moeda (ISO)</label><input name="currency_code" maxlength="3" value="${esc(p.currency_code)}"></div><div class="field"><label>Fuso horário</label><input name="timezone" value="${esc(p.timezone)}"></div><div class="field full"><button class="btn btn-primary">Guardar dados</button></div></form></section>`;}
@@ -114,11 +170,11 @@
     const label=modules.find(x=>x[0]===state.page)?.[2]||"Painel";
     $("#pageTitle").textContent=label;
     document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));
-    $("#content").innerHTML=state.page==="dashboard"?dashboard():state.page==="sales"?posPage():cfg[state.page]?tablePage(state.page):special(state.page);
+    $("#content").innerHTML=state.page==="dashboard"?dashboard():state.page==="sales"?posPage():state.page==="purchases"?purchasePage():state.page==="cash"?cashPage():cfg[state.page]?tablePage(state.page):special(state.page);
     $("#content").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
     const add=$("#addRecord");if(add)add.onclick=()=>openForm(state.page);
     const search=$("#tableSearch");if(search)search.oninput=()=>{const term=search.value.toLowerCase();const c=cfg[state.page];const rows=getRows(state.page).filter(r=>Object.values(r).join(" ").toLowerCase().includes(term));$("#tableBody").innerHTML=rows.map(r=>`<tr>${c.cols.map(([k])=>`<td>${fmtCell(k,r[k])}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${c.cols.length}" class="empty">Sem resultados.</td></tr>`;};
-    if($("#posAdd"))$("#posAdd").onclick=addPosItem;\n    if($("#posCheckout"))$("#posCheckout").onclick=checkoutPos;\n    document.querySelectorAll("[data-remove-cart]").forEach(b=>b.onclick=()=>{state.cart=state.cart.filter(x=>x.product_id!==b.dataset.removeCart);render();});\n    if($("#printReport"))$("#printReport").onclick=()=>window.print();
+    if($("#posAdd"))$("#posAdd").onclick=addPosItem;\n    if($("#purchaseAdd"))$("#purchaseAdd").onclick=addPurchaseItem;\n    if($("#purchaseReceive"))$("#purchaseReceive").onclick=receivePurchase;\n    if($("#openCashShift"))$("#openCashShift").onclick=openCashShift;\n    if($("#closeCashShift"))$("#closeCashShift").onclick=closeCashShift;\n    document.querySelectorAll("[data-remove-purchase]").forEach(b=>b.onclick=()=>{state.purchaseCart.splice(Number(b.dataset.removePurchase),1);render();});\n    if($("#posCheckout"))$("#posCheckout").onclick=checkoutPos;\n    document.querySelectorAll("[data-remove-cart]").forEach(b=>b.onclick=()=>{state.cart=state.cart.filter(x=>x.product_id!==b.dataset.removeCart);render();});\n    if($("#printReport"))$("#printReport").onclick=()=>window.print();
     if($("#openCash"))$("#openCash").onclick=openCash;
     if($("#settingsForm"))$("#settingsForm").onsubmit=saveSettings;
   }
@@ -135,7 +191,7 @@
         $("#recordDialog").close();await refresh();toast("Registo gravado na base de dados.");}catch(err){toast(err.message||"Não foi possível gravar.");}
     };
   }
-  async function openCash(){const amount=Number(prompt("Valor de abertura de caixa (Kz):","0"));if(!Number.isFinite(amount)||amount<0)return;try{const {error}=await sb.from("cash_sessions").insert({pharmacy_id:pharmacyId,opening_amount:amount,status:"open"});if(error)throw error;await refresh();toast("Turno de caixa aberto.");}catch(e){toast(e.message);}}
+  async function openCash(){await openCashShift();}
   async function saveSettings(e){e.preventDefault();const payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.country_code=payload.country_code.toUpperCase();payload.currency_code=payload.currency_code.toUpperCase();try{const {error}=await sb.from("pharmacies").update(payload).eq("id",pharmacyId);if(error)throw error;await refresh();toast("Dados da farmácia actualizados.");}catch(err){toast(err.message);}}
   async function refresh(){try{await load();render();}catch(e){console.error("[KANAWA DATA]",e);$("#content").innerHTML=head("Erro ao carregar dados","A ligação existe, mas a consulta foi recusada ou falhou.")+`<div class="notice">${esc(e.message||"Erro desconhecido")}</div><button class="btn btn-primary" id="retryLoad">Tentar novamente</button>`;$("#retryLoad").onclick=refresh;}}
   $("#navigation").innerHTML=modules.map(([id,icon,label])=>`<button class="nav-item" data-page="${id}"><span class="nav-icon">${icon}</span>${label}</button>`).join("");
