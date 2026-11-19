@@ -4,24 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123b35">
-  <title>Registo de Farmácia · KANAWA SOFT</title>
+  <title>Registo de Empresa · KANAWA SOFT</title>
   <link rel="stylesheet" href="./adesao.css">
 </head>
 <body>
   <header class="top"><a class="brand" href="./index.html">KANAWA SOFT <span>FARMÁCIA PRO</span></a><a href="./index.html">Central SaaS</a></header>
   <main class="wrap">
-    <section class="intro"><p class="eyebrow">PLATAFORMA DE GESTÃO DE FARMÁCIAS</p><h1>Registe a sua farmácia</h1><p>Crie a conta da empresa, preencha os dados legais e submeta os documentos para análise da Central KANAWA SOFT.</p><div class="notice">A submissão não substitui o alvará, o licenciamento nem a validação pelas autoridades competentes em Angola.</div></section>
+    <section class="intro"><p class="eyebrow">ONBOARDING EMPRESARIAL · KANAWA SOFT</p><h1>Registar empresa e criar acesso</h1><p>Crie a conta do responsável, identifique a empresa e preencha os dados da unidade farmacêutica. Os campos estão acompanhados de instruções para evitar erros.</p><div class="notice"><b>Importante:</b> preencha os dados conforme os documentos oficiais. A candidatura só será analisada depois do envio dos documentos obrigatórios. A aprovação da plataforma não substitui licenças ou autorizações legais.</div></section>
     <section class="panel" id="authPanel">
-      <h2>1. Conta de acesso</h2><div class="tabs"><button type="button" class="tab active" data-mode="signup">Criar conta</button><button type="button" class="tab" data-mode="login">Já tenho conta</button></div>
+      <h2>1. Criar conta de acesso</h2><div class="form-alert info"><b>Passo 1 de 2</b><span>Primeiro cria-se a conta do responsável. Depois serão pedidos os dados da empresa e da farmácia.</span></div><div class="tabs"><button type="button" class="tab active" data-mode="signup">Criar conta</button><button type="button" class="tab" data-mode="login">Já tenho conta</button></div>
       <form id="authForm">
-        <label id="nameWrap">Nome completo<input id="fullName" autocomplete="name" required></label>
-        <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
-        <label>Palavra-passe<input id="password" type="password" minlength="8" autocomplete="new-password" required></label>
+        <label id="nameWrap">Nome completo do responsável<input id="fullName" autocomplete="name" required placeholder="Nome e apelidos"><small class="field-help">Pessoa que ficará associada à conta inicial da empresa.</small></label>
+        <label>E-mail profissional<input id="email" type="email" autocomplete="email" required placeholder="responsavel@empresa.com"><small class="field-help">Utilize um endereço a que tenha acesso. Será usado para confirmar a conta e recuperar a palavra-passe.</small></label>
+        <label>Palavra-passe<input id="password" type="password" minlength="8" autocomplete="new-password" required placeholder="Mínimo de 8 caracteres"><small class="field-help">Crie uma palavra-passe forte, com letras e números. Não reutilize a palavra-passe de outros serviços.</small></label><label id="confirmPasswordWrap">Confirmar palavra-passe<input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Repita a palavra-passe"><small class="field-help">As duas palavras-passe devem ser iguais.</small></label>
         <button class="primary" id="authSubmit">Criar conta</button>
       </form><p class="message" id="authMessage" role="status"></p>
     </section>
     <section class="panel hidden" id="companyPanel">
-      <div class="panel-head"><div><h2>2. Dados da empresa e farmácia</h2><p>Preencha os dados exactamente como constam nos documentos oficiais.</p></div><button id="logout" class="secondary" type="button">Terminar sessão</button></div>
+      <div class="panel-head"><div><h2>2. Identificação e dados da empresa</h2><p>Preencha os dados exactamente como constam nos documentos oficiais.</p><div class="form-alert warning"><b>Verifique antes de enviar</b><span>Nome, NIF, morada e dados do representante devem corresponder aos documentos legais. Os campos marcados como obrigatórios não podem ficar vazios.</span></div></div><button id="logout" class="secondary" type="button">Terminar sessão</button></div>
       <form id="companyForm">
         <h3>Identificação empresarial</h3>
         <div class="grid">
@@ -50,7 +50,8 @@
           <label>Tipo de documento<select id="documentType"><option value="Certidão comercial">Certidão comercial</option><option value="Cartão de contribuinte / NIF">Cartão de contribuinte / NIF</option><option value="Alvará ou licença">Alvará ou licença</option><option value="BI do representante">BI do representante</option><option value="Documento do director técnico">Documento do director técnico</option><option value="Outro documento">Outro documento</option></select></label>
           <label>Ficheiros<input id="documents" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"></label>
         </div>
-        <button class="primary" id="saveCompany">Guardar candidatura e enviar documentos</button>
+        <h3>Esclarecimentos adicionais</h3><label class="notes-label">Informações ou dúvidas para a equipa de análise<textarea name="applicant_notes" rows="4" maxlength="3000" placeholder="Indique qualquer informação adicional, dificuldade ou dúvida sobre os campos e documentos."></textarea><small class="field-help">Opcional. Não introduza palavras-passe nem dados bancários.</small></label>
+      <button class="primary" id="saveCompany">Guardar candidatura e enviar documentos</button>
       </form>
       <p class="message" id="companyMessage" role="status"></p>
     </section>
