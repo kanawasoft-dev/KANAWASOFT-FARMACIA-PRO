@@ -53,7 +53,7 @@ A publicação do domínio depende de ligar este repositório ao Cloudflare Page
 1. Publicar/confirmar o domínio no Cloudflare Pages.
 2. Validar Site URL e Redirect URLs no Supabase Auth.
 3. Testar o fluxo completo de adesão e aprovação com uma conta de teste.
-4. Concluir os fluxos transaccionais de compras/recepção, devoluções, fecho de caixa, impressão de documentos e reconciliação financeira; o POS já chama a RPC transaccional do PostgreSQL.
+4. O POS está ligado à RPC transaccional com baixa FEFO. Compras/recepção e abertura/fecho de caixa também já têm ecrãs no frontend e RPCs com validação de farmácia, permissões e auditoria. Permanecem por concluir devoluções/reembolsos, impressão fiscal, reconciliação financeira, testes ponta-a-ponta e validação de produção.
 5. Completar testes de segurança, auditoria, backups e regras legais aplicáveis em Angola.
 
 ## Aviso
