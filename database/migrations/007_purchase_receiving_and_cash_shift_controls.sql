@@ -1,0 +1,7 @@
+-- Recepção transaccional de compras e abertura/fecho de caixa
+-- A lógica e as permissões completas desta migração estão aplicadas no Supabase.
+-- Ver funções:
+-- public.receive_pharmacy_purchase(uuid,uuid,jsonb,numeric,text,text)
+-- public.open_pharmacy_cash(uuid,numeric)
+-- public.close_pharmacy_cash(uuid,uuid,numeric)
+-- Consulte docs/COMPRAS_E_CAIXA.md para parâmetros e fluxos do frontend.
